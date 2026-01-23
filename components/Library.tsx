@@ -150,7 +150,7 @@ const Library: React.FC<LibraryProps> = ({
               >
                 <div onClick={() => onOpenBook(book)} className="cursor-pointer">
                   <div className="aspect-[3/4] rounded-xl overflow-hidden mb-3 relative bg-slate-800">
-                    <img src={book.coverUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <img src={book.coverUrl} alt="" className="w-full h-full group-hover:scale-110 transition-transform duration-500" />
                     <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/40 backdrop-blur-md text-[8px] font-bold uppercase tracking-tighter text-white">
                       {book.type}
                     </div>

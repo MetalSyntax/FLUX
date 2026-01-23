@@ -1,21 +1,30 @@
 {
-  "name": "glassreader---comic-&-book-library",
+  "name": "GlassReader",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 4002",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "buffer": "^6.0.3",
+    "epubjs": "^0.3.93",
+    "events": "^3.3.0",
+    "jszip": "^3.10.1",
+    "pdfjs-dist": "^5.4.530",
+    "process": "^0.11.10",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react-dom": "^19.2.3",
+    "unrar-js": "^0.2.3",
+    "util": "^0.12.5"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vite-plugin-pwa": "^1.2.0"
   }
 }

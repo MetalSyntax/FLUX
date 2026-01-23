@@ -4,7 +4,6 @@ import { Book, BookType, ViewType, UserSettings } from './types';
 import Library from './components/Library';
 import ReaderView from './components/ReaderView';
 import Profile from './components/Profile';
-import Discover from './components/Discover';
 import BottomNav from './components/BottomNav';
 import TopNav from './components/TopNav';
 import * as db from './db';
@@ -49,11 +48,20 @@ const App: React.FC = () => {
     setCurrentView(ViewType.READER);
   };
 
-  const handleUpdateProgress = async (bookId: string, page: number) => {
+  const handleUpdateProgress = async (bookId: string, page: number, total?: number, cover?: string) => {
     setLibrary(prev => prev.map(b => {
       if (b.id === bookId) {
-        const progress = Math.round((page / b.totalPages) * 100);
-        const updated = { ...b, currentPage: page, progress, lastReadDate: Date.now(), lastRead: 'Just now' };
+        const totalPages = total || b.totalPages;
+        const progress = Math.round((page / totalPages) * 100);
+        const updated = { 
+          ...b, 
+          currentPage: page, 
+          totalPages, 
+          progress, 
+          lastReadDate: Date.now(), 
+          lastRead: 'Just now',
+          coverUrl: cover || b.coverUrl
+        };
         db.saveBook(updated);
         return updated;
       }
@@ -79,14 +87,14 @@ const App: React.FC = () => {
     const newBook: Book = {
       id: crypto.randomUUID(),
       title: file.name.replace(/\.[^/.]+$/, ""),
-      author: "Local Import",
-      coverUrl: `https://picsum.photos/seed/${file.name}/400/600`,
+      author: extension === 'CBR' || extension === 'CBZ' ? "Manga/Comic" : "Electronic Book",
+      coverUrl: '', // Will be updated on first open
       type: type,
       progress: 0,
       lastRead: 'Just added',
       lastReadDate: Date.now(),
       currentPage: 1,
-      totalPages: 50,
+      totalPages: 1,
       file: file
     };
 
@@ -116,15 +124,14 @@ const App: React.FC = () => {
             }}
           />
         )}
-        {currentView === ViewType.DISCOVER && (
-          <Discover onOpenBook={handleOpenBook} />
-        )}
+
         {currentView === ViewType.PROFILE && (
           <Profile settings={settings} onUpdate={handleUpdateSettings} library={library} />
         )}
         {currentView === ViewType.READER && selectedBook && (
           <ReaderView 
             book={selectedBook} 
+            settings={settings}
             onClose={() => setCurrentView(ViewType.HOME)}
             onProgressUpdate={handleUpdateProgress}
           />

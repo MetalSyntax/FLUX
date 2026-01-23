@@ -22,10 +22,6 @@ const TopNav: React.FC<TopNavProps> = ({ settings, onProfileClick }) => {
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="relative size-10 rounded-full glass flex items-center justify-center hover:bg-white/10 transition-colors">
-          <span className="material-symbols-outlined text-xl opacity-70">notifications</span>
-          <span className="absolute top-2.5 right-2.5 size-2 bg-blue-500 rounded-full border-2 border-current"></span>
-        </button>
       </div>
     </nav>
   );

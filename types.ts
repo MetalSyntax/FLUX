@@ -9,8 +9,7 @@ export enum ViewType {
   HOME = 'home',
   BOOKSHELF = 'bookshelf',
   PROFILE = 'profile',
-  READER = 'reader',
-  DISCOVER = 'discover'
+  READER = 'reader'
 }
 
 export interface UserSettings {
