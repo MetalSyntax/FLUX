@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Book, BookType, UserSettings, Bookmark } from '../types';
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import ePub, { Rendition } from 'epubjs';
 import JSZip from 'jszip';
 // @ts-ignore
@@ -11,7 +12,7 @@ import * as db from '../db';
 
 // @ts-ignore
 window.Buffer = Buffer;
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 interface ReaderViewProps {
   book: Book;
