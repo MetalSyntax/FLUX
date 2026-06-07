@@ -154,10 +154,8 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
           });
           setTimeout(async () => {
             if (!epubViewerRef.current) return;
-            const w = epubViewerRef.current.clientWidth || window.innerWidth;
-            const h = epubViewerRef.current.clientHeight || window.innerHeight;
             const rendition = epub.renderTo(epubViewerRef.current, {
-              width: w, height: h, flow: 'paginated',
+              width: '100%', height: '100%', flow: 'paginated',
               manager: 'default', allowScriptedContent: true,
             });
             renditionRef.current = rendition;
@@ -256,29 +254,17 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
 
   const applyEpubTheme = (rendition: Rendition) => {
     rendition.themes.default({
+      html: {
+        'background-image': 'none !important',
+      },
       body: {
         'background-color': `${ct.bg} !important`,
-        // Prevent EPUBs that embed the cover as a CSS background from showing it on every page
         'background-image': 'none !important',
         'color': `${ct.text} !important`,
         'font-family': 'system-ui, -apple-system, sans-serif !important',
         'padding': '0 40px !important',
       },
-      p: { 'line-height': '1.6 !important', 'margin-bottom': '1em !important' },
-      // Cap image height so a tall cover image doesn't bleed into the next virtual page
-      img: {
-        'max-width': '100% !important',
-        'max-height': '90vh !important',
-        'height': 'auto !important',
-        'display': 'block !important',
-        'margin': '0 auto !important',
-        'object-fit': 'contain !important',
-      },
-      figure: {
-        'margin': '0 !important',
-        'max-height': '90vh !important',
-        'overflow': 'hidden !important',
-      },
+      p: { 'line-height': '1.6 !important', 'margin-bottom': '1em !important' }
     });
     rendition.themes.fontSize(`${fontSize}%`);
   };
@@ -460,7 +446,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
 
         {/* EPUB viewer */}
         {book.type === BookType.EPUB && (
-          <div className="relative w-full h-full max-w-4xl mx-auto overflow-hidden">
+          <div className="relative w-full h-full max-w-4xl mx-auto">
             <div
               ref={epubViewerRef}
               className={`w-full h-full shadow-2xl transition-opacity duration-500 ${
