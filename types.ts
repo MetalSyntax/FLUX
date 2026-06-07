@@ -31,6 +31,7 @@ export interface Book {
   currentPage: number;
   totalPages: number;
   file?: File;
+  currentCfi?: string;
   isFavorite?: boolean;
   tags?: string[];
 }

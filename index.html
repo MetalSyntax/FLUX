@@ -99,49 +99,79 @@
 
       .page-flip {
         perspective: 2000px;
-        transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1.000);
       }
-      
+
       .page-flip-next-exit {
-        animation: pageFlipNext 0.7s cubic-bezier(0.645, 0.045, 0.355, 1.000) forwards;
+        animation: pageFlipNext 0.35s cubic-bezier(0.645, 0.045, 0.355, 1.000) forwards;
         transform-origin: left center;
         z-index: 50;
       }
-      
+
       .page-flip-prev-exit {
-        animation: pageFlipPrev 0.7s cubic-bezier(0.645, 0.045, 0.355, 1.000) forwards;
+        animation: pageFlipPrev 0.35s cubic-bezier(0.645, 0.045, 0.355, 1.000) forwards;
         transform-origin: right center;
         z-index: 50;
       }
 
       .page-flip-next-enter {
-        animation: pageFlipEnterNext 0.7s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards;
+        animation: pageFlipEnterNext 0.5s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards;
         transform-origin: right center;
       }
 
       .page-flip-prev-enter {
-        animation: pageFlipEnterPrev 0.7s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards;
+        animation: pageFlipEnterPrev 0.5s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards;
         transform-origin: left center;
       }
 
       @keyframes pageFlipNext {
         0% { transform: rotateY(0deg); opacity: 1; }
-        100% { transform: rotateY(-180deg); opacity: 0; }
+        100% { transform: rotateY(-90deg); opacity: 0; }
       }
 
       @keyframes pageFlipPrev {
         0% { transform: rotateY(0deg); opacity: 1; }
-        100% { transform: rotateY(180deg); opacity: 0; }
+        100% { transform: rotateY(90deg); opacity: 0; }
       }
 
       @keyframes pageFlipEnterNext {
-        0% { transform: rotateY(180deg); opacity: 0; }
+        0% { transform: rotateY(90deg); opacity: 0; }
         100% { transform: rotateY(0deg); opacity: 1; }
       }
 
       @keyframes pageFlipEnterPrev {
-        0% { transform: rotateY(-180deg); opacity: 0; }
+        0% { transform: rotateY(-90deg); opacity: 0; }
         100% { transform: rotateY(0deg); opacity: 1; }
+      }
+
+      /* EPUB page transitions (fade + slight slide — iframe-safe) */
+      .epub-next-exit {
+        animation: epubNextExit 0.28s ease-in forwards;
+      }
+      .epub-prev-exit {
+        animation: epubPrevExit 0.28s ease-in forwards;
+      }
+      .epub-next-enter {
+        animation: epubNextEnter 0.42s ease-out forwards;
+      }
+      .epub-prev-enter {
+        animation: epubPrevEnter 0.42s ease-out forwards;
+      }
+
+      @keyframes epubNextExit {
+        from { opacity: 1; transform: translateX(0) scale(1); }
+        to   { opacity: 0; transform: translateX(-3%) scale(0.99); }
+      }
+      @keyframes epubPrevExit {
+        from { opacity: 1; transform: translateX(0) scale(1); }
+        to   { opacity: 0; transform: translateX(3%) scale(0.99); }
+      }
+      @keyframes epubNextEnter {
+        from { opacity: 0; transform: translateX(3%) scale(0.99); }
+        to   { opacity: 1; transform: translateX(0) scale(1); }
+      }
+      @keyframes epubPrevEnter {
+        from { opacity: 0; transform: translateX(-3%) scale(0.99); }
+        to   { opacity: 1; transform: translateX(0) scale(1); }
       }
     </style>
     <script type="importmap">

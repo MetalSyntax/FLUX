@@ -56,7 +56,7 @@ const App: React.FC = () => {
     setCurrentView(ViewType.READER);
   };
 
-  const handleUpdateProgress = async (bookId: string, page: number, total?: number, cover?: string) => {
+  const handleUpdateProgress = async (bookId: string, page: number, total?: number, cover?: string, cfi?: string) => {
     setLibrary((prev) =>
       prev.map((b) => {
         if (b.id !== bookId) return b;
@@ -70,6 +70,7 @@ const App: React.FC = () => {
           lastReadDate: Date.now(),
           lastRead: 'Just now',
           coverUrl: cover || b.coverUrl,
+          ...(cfi !== undefined ? { currentCfi: cfi } : {}),
         };
         db.saveBook(updated);
         return updated;

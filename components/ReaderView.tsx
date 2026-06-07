@@ -17,7 +17,7 @@ interface ReaderViewProps {
   book: Book;
   settings: UserSettings;
   onClose: () => void;
-  onProgressUpdate: (bookId: string, page: number, total?: number, cover?: string) => void;
+  onProgressUpdate: (bookId: string, page: number, total?: number, cover?: string, cfi?: string) => void;
 }
 
 const BOOKMARK_COLORS = ['#2563eb', '#7c3aed', '#dc2626', '#16a34a', '#f59e0b'];
@@ -59,6 +59,9 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
   // Touch/swipe refs
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+
+  // Render token — cancels stale PDF renders when page changes quickly
+  const renderTokenRef = useRef(0);
 
   // Session tracking refs
   const sessionStartRef = useRef({ time: Date.now(), page: book.currentPage || 1 });
@@ -131,7 +134,9 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
             await p1.render({ canvasContext: cv.getContext('2d')!, viewport: vp, canvas: cv }).promise;
             onProgressUpdate(book.id, currentPage, pdf.numPages, cv.toDataURL());
           } catch { /* cover optional */ }
-          await renderPdfPage(currentPage);
+          // Initial render is handled by the useEffect below (triggered by setTotalPages).
+          // Calling it again here with a stale closure value of currentPage would
+          // overwrite the correct page if the user navigated while the PDF was loading.
           setLoading(false);
         }
         else if (book.type === BookType.EPUB) {
@@ -149,13 +154,31 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
           });
           setTimeout(async () => {
             if (!epubViewerRef.current) return;
+            const w = epubViewerRef.current.clientWidth || window.innerWidth;
+            const h = epubViewerRef.current.clientHeight || window.innerHeight;
             const rendition = epub.renderTo(epubViewerRef.current, {
-              width: '100%', height: '100%', flow: 'paginated',
+              width: w, height: h, flow: 'paginated',
               manager: 'default', allowScriptedContent: true,
             });
             renditionRef.current = rendition;
             applyEpubTheme(rendition);
-            await rendition.display();
+
+            // Show the viewer only after the first page is fully laid out
+            let firstRender = true;
+            rendition.on('rendered', () => {
+              if (firstRender) {
+                firstRender = false;
+                setLoading(false);
+              }
+            });
+
+            // Restore saved position (CFI) or start from beginning
+            if (book.currentCfi) {
+              await rendition.display(book.currentCfi);
+            } else {
+              await rendition.display();
+            }
+
             rendition.on('click', (e: any) => {
               const x = e.clientX;
               const w = window.innerWidth;
@@ -165,10 +188,20 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
             });
             epub.locations.generate(1000).then(() => setTotalPages(epub.locations.length()));
             rendition.on('relocated', (location: any) => {
-              const pct = epub.locations.percentageFromCfi(location.start.cfi);
-              setCurrentPage(Math.floor(pct * epub.locations.length()) + 1);
+              const cfi = location.start.cfi;
+              try {
+                if (epub.locations && epub.locations.length() > 0) {
+                  const pct = epub.locations.percentageFromCfi(cfi);
+                  const newPage = Math.floor(pct * epub.locations.length()) + 1;
+                  setCurrentPage(newPage);
+                  onProgressUpdate(book.id, newPage, epub.locations.length(), undefined, cfi);
+                } else {
+                  onProgressUpdate(book.id, currentPage, undefined, undefined, cfi);
+                }
+              } catch {
+                onProgressUpdate(book.id, currentPage, undefined, undefined, cfi);
+              }
             });
-            setLoading(false);
           }, 100);
         }
         else if (book.type === BookType.CBR) {
@@ -223,8 +256,29 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
 
   const applyEpubTheme = (rendition: Rendition) => {
     rendition.themes.default({
-      body: { 'background-color': `${ct.bg} !important`, 'color': `${ct.text} !important`, 'font-family': 'system-ui, -apple-system, sans-serif !important', 'padding': '0 40px !important' },
+      body: {
+        'background-color': `${ct.bg} !important`,
+        // Prevent EPUBs that embed the cover as a CSS background from showing it on every page
+        'background-image': 'none !important',
+        'color': `${ct.text} !important`,
+        'font-family': 'system-ui, -apple-system, sans-serif !important',
+        'padding': '0 40px !important',
+      },
       p: { 'line-height': '1.6 !important', 'margin-bottom': '1em !important' },
+      // Cap image height so a tall cover image doesn't bleed into the next virtual page
+      img: {
+        'max-width': '100% !important',
+        'max-height': '90vh !important',
+        'height': 'auto !important',
+        'display': 'block !important',
+        'margin': '0 auto !important',
+        'object-fit': 'contain !important',
+      },
+      figure: {
+        'margin': '0 !important',
+        'max-height': '90vh !important',
+        'overflow': 'hidden !important',
+      },
     });
     rendition.themes.fontSize(`${fontSize}%`);
   };
@@ -235,7 +289,10 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
 
   const renderPdfPage = async (pageNumber: number) => {
     if (!pdfDocRef.current || !canvasRef.current) return;
+    // Claim a token; if a newer call arrives before this one finishes, abort.
+    const token = ++renderTokenRef.current;
     const page = await pdfDocRef.current.getPage(pageNumber);
+    if (token !== renderTokenRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -283,8 +340,8 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
       else setCurrentPage((p) => Math.min(p + pageStep, totalPages));
       setIsPageTurning(false);
       setIsEntering(true);
-      setTimeout(() => setIsEntering(false), 700);
-    }, 400);
+      setTimeout(() => setIsEntering(false), 500);
+    }, 350);
   }, [currentPage, totalPages, isPageTurning, pageStep]);
 
   const goToPrev = useCallback(() => {
@@ -296,8 +353,8 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
       else setCurrentPage((p) => Math.max(p - pageStep, 1));
       setIsPageTurning(false);
       setIsEntering(true);
-      setTimeout(() => setIsEntering(false), 700);
-    }, 400);
+      setTimeout(() => setIsEntering(false), 500);
+    }, 350);
   }, [currentPage, isPageTurning, pageStep]);
 
   // ── Touch/swipe handlers ──────────────────────────────────────────────
@@ -403,8 +460,18 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
 
         {/* EPUB viewer */}
         {book.type === BookType.EPUB && (
-          <div className="relative w-full h-full max-w-4xl mx-auto">
-            <div ref={epubViewerRef} className={`w-full h-full shadow-2xl ${loading ? 'opacity-0' : 'opacity-100'} transition-all duration-700`} />
+          <div className="relative w-full h-full max-w-4xl mx-auto overflow-hidden">
+            <div
+              ref={epubViewerRef}
+              className={`w-full h-full shadow-2xl transition-opacity duration-500 ${
+                loading ? 'opacity-0' : 'opacity-100'
+              } ${!loading && isPageTurning
+                  ? (turnDirection === 'next' ? 'epub-next-exit' : 'epub-prev-exit')
+                  : (!loading && isEntering
+                      ? (turnDirection === 'next' ? 'epub-next-enter' : 'epub-prev-enter')
+                      : '')
+              }`}
+            />
             {!loading && (
               <div className="absolute inset-0 z-20 flex pointer-events-none">
                 <div className="flex-1 cursor-w-resize pointer-events-auto" onClick={goToPrev} />
@@ -436,8 +503,16 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
 
             {/* PDF — paginated mode */}
             {book.type === BookType.PDF && !scrollMode && (
-              <div className="p-8 pb-32 pt-20">
-                <canvas ref={canvasRef} className="max-w-full shadow-[0_20px_60px_rgba(0,0,0,0.8)] rounded-lg bg-white" />
+              <div className="page-flip flex items-center justify-center w-full h-full">
+                <div
+                  className={`p-8 pb-32 pt-20 ${
+                    isPageTurning
+                      ? (turnDirection === 'next' ? 'page-flip-next-exit' : 'page-flip-prev-exit')
+                      : (isEntering ? (turnDirection === 'next' ? 'page-flip-next-enter' : 'page-flip-prev-enter') : '')
+                  }`}
+                >
+                  <canvas ref={canvasRef} className="max-w-full shadow-[0_20px_60px_rgba(0,0,0,0.8)] rounded-lg bg-white" />
+                </div>
               </div>
             )}
 
