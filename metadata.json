@@ -1,5 +1,5 @@
 {
-  "name": "GlassReader - Comic & Book Library",
-  "description": "A minimalist, glassmorphic reader for Comics (CBR), Manga, and E-Books (PDF/EPUB) featuring smooth animations and a premium dark-themed library management system.",
+  "name": "FLUX — Comic & Book Library",
+  "description": "A modern, privacy-focused reader for Manga (CBR/CBZ), E-Books (EPUB) and Documents (PDF) with bookmarks, reading stats, collections and offline support.",
   "requestFramePermissions": []
 }

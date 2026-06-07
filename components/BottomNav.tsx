@@ -12,14 +12,16 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate, onAddClic
   const NavItem: React.FC<{ view: ViewType; icon: string }> = ({ view, icon }) => {
     const isActive = activeView === view;
     return (
-      <button 
+      <button
         onClick={() => onNavigate(view)}
         className={`flex-1 flex justify-center py-4 transition-all duration-300 ${
           isActive ? 'text-primary' : 'text-white/30 hover:text-white/60'
         }`}
       >
-        <span className={`material-symbols-outlined text-2xl ${isActive ? 'font-variation-fill' : 'font-light'}`} 
-              style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>
+        <span
+          className="material-symbols-outlined text-2xl"
+          style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
+        >
           {icon}
         </span>
       </button>
@@ -28,23 +30,26 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate, onAddClic
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 px-6 pb-8">
-      <div className="relative mx-auto max-w-md h-16 rounded-[2rem] glass-dark flex items-center border border-white/10 shadow-2xl overflow-visible px-10">
-        <div className="flex-1 flex justify-start">
+      <div className="relative mx-auto max-w-sm h-16 rounded-[2rem] glass-dark flex items-center border border-white/10 shadow-2xl overflow-visible px-4">
+        {/* Left nav items */}
+        <div className="flex flex-1 justify-around">
           <NavItem view={ViewType.HOME} icon="grid_view" />
-        </div>
-        
-        {/* Central Add Button */}
-        <div className="relative -top-6 mx-8">
-           <button 
-            onClick={onAddClick}
-            className="size-16 rounded-full bg-primary flex items-center justify-center shadow-xl shadow-primary/40 active:scale-90 transition-all border-[6px] border-current hover:brightness-110"
-            style={{ color: 'var(--bg-gradient)' }}
-           >
-             <span className="material-symbols-outlined text-3xl font-bold text-white">add</span>
-           </button>
+          <NavItem view={ViewType.DISCOVER} icon="explore" />
         </div>
 
-        <div className="flex-1 flex justify-end">
+        {/* Central Add Button */}
+        <div className="relative -top-6 mx-4">
+          <button
+            onClick={onAddClick}
+            className="size-16 rounded-full bg-primary flex items-center justify-center shadow-xl shadow-primary/40 active:scale-90 transition-all border-[6px] hover:brightness-110"
+            style={{ borderColor: '#101628', background: '#2563eb' }}
+          >
+            <span className="material-symbols-outlined text-3xl font-bold text-white">add</span>
+          </button>
+        </div>
+
+        {/* Right nav items */}
+        <div className="flex flex-1 justify-around">
           <NavItem view={ViewType.PROFILE} icon="person" />
         </div>
       </div>

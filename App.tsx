@@ -4,6 +4,7 @@ import { Book, BookType, ViewType, UserSettings } from './types';
 import Library from './components/Library';
 import ReaderView from './components/ReaderView';
 import Profile from './components/Profile';
+import Discover from './components/Discover';
 import BottomNav from './components/BottomNav';
 import TopNav from './components/TopNav';
 import * as db from './db';
@@ -16,10 +17,11 @@ const App: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState('All');
   const [settings, setSettings] = useState<UserSettings>({
     name: 'Reader',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Glass',
-    theme: 'dark'
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Flux',
+    theme: 'dark',
+    dailyGoal: 10,
   });
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ const App: React.FC = () => {
       setLibrary(savedBooks);
       const savedSettings = await db.getSettings();
       if (savedSettings) {
-        setSettings(savedSettings);
+        setSettings({ dailyGoal: 10, ...savedSettings });
         applyTheme(savedSettings.theme);
       }
     };
@@ -43,30 +45,36 @@ const App: React.FC = () => {
     else root.classList.add('dark');
   };
 
-  const handleOpenBook = (book: Book) => {
-    setSelectedBook(book);
+  // Open book: load file from IndexedDB if not in memory
+  const handleOpenBook = async (book: Book) => {
+    let bookToOpen = book;
+    if (!book.file) {
+      const file = await db.getFile(book.id);
+      if (file) bookToOpen = { ...book, file };
+    }
+    setSelectedBook(bookToOpen);
     setCurrentView(ViewType.READER);
   };
 
   const handleUpdateProgress = async (bookId: string, page: number, total?: number, cover?: string) => {
-    setLibrary(prev => prev.map(b => {
-      if (b.id === bookId) {
+    setLibrary((prev) =>
+      prev.map((b) => {
+        if (b.id !== bookId) return b;
         const totalPages = total || b.totalPages;
         const progress = Math.round((page / totalPages) * 100);
-        const updated = { 
-          ...b, 
-          currentPage: page, 
-          totalPages, 
-          progress, 
-          lastReadDate: Date.now(), 
+        const updated: Book = {
+          ...b,
+          currentPage: page,
+          totalPages,
+          progress,
+          lastReadDate: Date.now(),
           lastRead: 'Just now',
-          coverUrl: cover || b.coverUrl
+          coverUrl: cover || b.coverUrl,
         };
         db.saveBook(updated);
         return updated;
-      }
-      return b;
-    }));
+      })
+    );
   };
 
   const handleUpdateSettings = async (newSettings: UserSettings) => {
@@ -75,32 +83,60 @@ const App: React.FC = () => {
     await db.saveSettings(newSettings);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const extension = file.name.split('.').pop()?.toUpperCase();
+  // Core file processing — shared by upload and Discover download
+  const processFile = async (file: File) => {
+    const ext = file.name.split('.').pop()?.toUpperCase();
     let type = BookType.PDF;
-    if (extension === 'CBR' || extension === 'CBZ') type = BookType.CBR;
-    if (extension === 'EPUB') type = BookType.EPUB;
+    if (ext === 'CBR' || ext === 'CBZ') type = BookType.CBR;
+    if (ext === 'EPUB') type = BookType.EPUB;
 
     const newBook: Book = {
       id: crypto.randomUUID(),
-      title: file.name.replace(/\.[^/.]+$/, ""),
-      author: extension === 'CBR' || extension === 'CBZ' ? "Manga/Comic" : "Electronic Book",
-      coverUrl: '', // Will be updated on first open
-      type: type,
+      title: file.name.replace(/\.[^/.]+$/, ''),
+      author: type === BookType.CBR ? 'Manga / Comic' : 'E-Book',
+      coverUrl: '',
+      type,
       progress: 0,
       lastRead: 'Just added',
       lastReadDate: Date.now(),
       currentPage: 1,
       totalPages: 1,
-      file: file
+      file,
     };
 
+    // Persist the file as ArrayBuffer so it survives tab closes
+    const buffer = await file.arrayBuffer();
+    await db.saveFile(newBook.id, buffer, file.name, file.type);
     await db.saveBook(newBook);
-    setLibrary([newBook, ...library]);
+    setLibrary((prev) => [newBook, ...prev]);
     setCurrentView(ViewType.HOME);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    await processFile(file);
+  };
+
+  const handleAddFromDiscover = async (file: File) => {
+    await processFile(file);
+  };
+
+  const handleDelete = async (id: string) => {
+    await db.deleteBook(id);
+    setLibrary((prev) => prev.filter((b) => b.id !== id));
+  };
+
+  const handleFavorite = async (id: string) => {
+    setLibrary((prev) =>
+      prev.map((b) => {
+        if (b.id !== id) return b;
+        const updated = { ...b, isFavorite: !b.isFavorite };
+        db.saveBook(updated);
+        return updated;
+      })
+    );
   };
 
   return (
@@ -111,26 +147,34 @@ const App: React.FC = () => {
 
       <main className={`flex-1 z-10 ${currentView !== ViewType.READER ? 'pb-28 pt-4' : ''}`}>
         {currentView === ViewType.HOME && (
-          <Library 
-            books={library} 
-            onOpenBook={handleOpenBook} 
+          <Library
+            books={library}
+            onOpenBook={handleOpenBook}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             activeFilter={activeFilter}
             setActiveFilter={setActiveFilter}
-            onDelete={async (id) => {
-              await db.deleteBook(id);
-              setLibrary(prev => prev.filter(b => b.id !== id));
-            }}
+            onDelete={handleDelete}
+            onFavorite={handleFavorite}
+            settings={settings}
+          />
+        )}
+
+        {currentView === ViewType.DISCOVER && (
+          <Discover
+            library={library}
+            onOpenBook={handleOpenBook}
+            onAddBook={handleAddFromDiscover}
           />
         )}
 
         {currentView === ViewType.PROFILE && (
           <Profile settings={settings} onUpdate={handleUpdateSettings} library={library} />
         )}
+
         {currentView === ViewType.READER && selectedBook && (
-          <ReaderView 
-            book={selectedBook} 
+          <ReaderView
+            book={selectedBook}
             settings={settings}
             onClose={() => setCurrentView(ViewType.HOME)}
             onProgressUpdate={handleUpdateProgress}
@@ -139,14 +183,20 @@ const App: React.FC = () => {
       </main>
 
       {currentView !== ViewType.READER && (
-        <BottomNav 
-          activeView={currentView} 
-          onNavigate={setCurrentView} 
+        <BottomNav
+          activeView={currentView}
+          onNavigate={setCurrentView}
           onAddClick={() => fileInputRef.current?.click()}
         />
       )}
 
-      <input type="file" ref={fileInputRef} className="hidden" accept=".pdf,.epub,.cbr,.cbz" onChange={handleFileUpload} />
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept=".pdf,.epub,.cbr,.cbz"
+        onChange={handleFileUpload}
+      />
     </div>
   );
 };
