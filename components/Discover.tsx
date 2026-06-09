@@ -88,8 +88,13 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
 
   const handleAnnaSearch = () => {
     if (!searchQuery.trim()) return;
-    // Using one of the requested mirrors
     setIframeUrl(`https://annas-archive.gl/search?q=${encodeURIComponent(searchQuery)}`);
+  };
+
+  const handleLibgenSearch = () => {
+    if (!searchQuery.trim()) return;
+    // Using one of the requested Libgen mirrors
+    setIframeUrl(`https://libgen.li/index.php?req=${encodeURIComponent(searchQuery)}`);
   };
 
   const executeSearch = async (query: string) => {
@@ -148,12 +153,20 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
           </button>
         </form>
         {searchQuery.trim() && (
-          <button
-            onClick={handleAnnaSearch}
-            className="mt-3 w-full py-3 rounded-2xl glass border border-white/5 flex items-center justify-center gap-2 hover:bg-white/5 transition-all text-xs font-bold opacity-80"
-          >
-            <span className="material-symbols-outlined text-sm">public</span> Search in Anna's Archive
-          </button>
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={handleAnnaSearch}
+              className="flex-1 py-3 rounded-2xl glass border border-white/5 flex items-center justify-center gap-2 hover:bg-white/5 transition-all text-[10px] font-bold opacity-80"
+            >
+              <span className="material-symbols-outlined text-sm">public</span> Anna's Archive
+            </button>
+            <button
+              onClick={handleLibgenSearch}
+              className="flex-1 py-3 rounded-2xl glass border border-white/5 flex items-center justify-center gap-2 hover:bg-white/5 transition-all text-[10px] font-bold opacity-80"
+            >
+              <span className="material-symbols-outlined text-sm">book</span> Library Genesis
+            </button>
+          </div>
         )}
       </section>
 
