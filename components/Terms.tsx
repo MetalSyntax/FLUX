@@ -33,6 +33,11 @@ const Terms: React.FC = () => {
           <h2 className="text-base font-bold text-primary mb-2">5. Liability</h2>
           <p>FLUX is provided "as is" without warranties of any kind. We are not liable for any data loss. We strongly recommend exporting backups of your library JSON periodically using the Settings view.</p>
         </section>
+
+        <section>
+          <h2 className="text-base font-bold text-primary mb-2">6. Developer & Contact</h2>
+          <p>FLUX is designed and maintained by MetalSyntax. For more information, updates, or to view other projects, please visit my portfolio at <a href="https://metalsyntax.vercel.app" target="_blank" rel="noreferrer" className="text-primary hover:underline font-bold">metalsyntax.vercel.app</a>.</p>
+        </section>
       </div>
     </div>
   );
