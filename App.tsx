@@ -15,6 +15,7 @@ const App: React.FC = () => {
   const [library, setLibrary] = useState<Book[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
+  const [isUploading, setIsUploading] = useState(false);
   const [settings, setSettings] = useState<UserSettings>({
     name: 'Reader',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Flux',
@@ -84,8 +85,8 @@ const App: React.FC = () => {
     await db.saveSettings(newSettings);
   };
 
-  // Core file processing — shared by upload and Discover download
   const processFile = async (file: File) => {
+    setIsUploading(true);
     const ext = file.name.split('.').pop()?.toUpperCase();
     let type = BookType.PDF;
     if (ext === 'CBR' || ext === 'CBZ') type = BookType.CBR;
@@ -110,7 +111,8 @@ const App: React.FC = () => {
     await db.saveFile(newBook.id, buffer, file.name, file.type);
     await db.saveBook(newBook);
     setLibrary((prev) => [newBook, ...prev]);
-    setCurrentView(ViewType.HOME);
+    setIsUploading(false);
+    handleOpenBook(newBook);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,6 +200,14 @@ const App: React.FC = () => {
         accept=".pdf,.epub,.cbr,.cbz"
         onChange={handleFileUpload}
       />
+      {isUploading && (
+        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-white/10 p-8 rounded-3xl flex flex-col items-center gap-4 border border-white/20">
+            <div className="size-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+            <p className="text-white font-bold tracking-widest uppercase text-sm">Loading Book...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

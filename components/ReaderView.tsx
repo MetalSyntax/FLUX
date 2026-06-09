@@ -156,7 +156,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
           setTimeout(async () => {
             if (!epubViewerRef.current) return;
             const rendition = epub.renderTo(epubViewerRef.current, {
-              width: '100%', height: '100%', flow: 'paginated',
+              width: '100%', height: '100%', flow: scrollMode ? 'scrolled-doc' : 'paginated',
               manager: 'default', allowScriptedContent: true,
             });
             renditionRef.current = rendition;
@@ -274,6 +274,45 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
     if (renditionRef.current) applyEpubTheme(renditionRef.current);
   }, [settings.theme, fontSize]);
 
+  useEffect(() => {
+    const updateEpubFlow = async () => {
+      if (!loading && book.type === BookType.EPUB && renditionRef.current && bookRef.current && epubViewerRef.current) {
+        const currentCfi = renditionRef.current.location?.start?.cfi;
+        renditionRef.current.destroy();
+        epubViewerRef.current.innerHTML = '';
+        const rendition = bookRef.current.renderTo(epubViewerRef.current, {
+          width: '100%', height: '100%', flow: scrollMode ? 'scrolled-doc' : 'paginated',
+          manager: 'default', allowScriptedContent: true,
+        });
+        renditionRef.current = rendition;
+        applyEpubTheme(rendition);
+        
+        rendition.on('click', (e: any) => {
+          const x = e.clientX;
+          const w = window.innerWidth;
+          if (x < w * 0.3) goToPrev();
+          else if (x > w * 0.7) goToNext();
+          else setShowControls((p) => !p);
+        });
+        
+        rendition.on('relocated', (location: any) => {
+          const cfi = location.start.cfi;
+          try {
+            if (bookRef.current.locations && bookRef.current.locations.length() > 0) {
+              const pct = bookRef.current.locations.percentageFromCfi(cfi);
+              const newPage = Math.floor(pct * bookRef.current.locations.length()) + 1;
+              setCurrentPage(newPage);
+            }
+          } catch {}
+        });
+
+        if (currentCfi) await rendition.display(currentCfi);
+        else await rendition.display();
+      }
+    };
+    updateEpubFlow();
+  }, [scrollMode]);
+
   const renderPdfPage = async (pageNumber: number) => {
     if (!pdfDocRef.current || !canvasRef.current) return;
     // Claim a token; if a newer call arrives before this one finishes, abort.
@@ -307,7 +346,9 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
         cv.width = vp.width; cv.height = vp.height;
         await page.render({ canvasContext: cv.getContext('2d')!, viewport: vp, canvas: cv }).promise;
         urls.push(cv.toDataURL('image/jpeg', 0.85));
-        if (i % 5 === 0) setScrollPages([...urls]);
+        setScrollPages([...urls]);
+        // Yield to the main thread to allow UI to update and not block scrolling
+        await new Promise(r => setTimeout(r, 10));
       }
       setScrollPages(urls);
       setRenderingScroll(false);
@@ -671,12 +712,12 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
             </div>
           )}
 
-          {/* Scroll mode (PDF only) */}
-          {book.type === BookType.PDF && (
+          {/* Scroll mode (PDF / EPUB) */}
+          {(book.type === BookType.PDF || book.type === BookType.EPUB) && (
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Scroll Mode</p>
-                <p className="text-[9px] opacity-20 mt-0.5">Continuous page flow</p>
+                <p className="text-[9px] opacity-20 mt-0.5">Continuous vertical flow</p>
               </div>
               <button
                 onClick={() => setScrollMode((p) => !p)}
