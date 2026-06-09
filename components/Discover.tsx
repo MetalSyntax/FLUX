@@ -33,6 +33,12 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<number | null>(null);
   const [error, setError] = useState(false);
+  
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<GBook[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -72,6 +78,29 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
     }
   };
 
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    setHasSearched(true);
+    setError(false);
+    try {
+      const res = await fetch(`https://gutendex.com/books/?search=${encodeURIComponent(searchQuery)}&mime_type=application%2Fepub%2Bzip`);
+      if (!res.ok) throw new Error('Search failed');
+      const data = await res.json();
+      setSearchResults(data.results || []);
+    } catch {
+      setError(true);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAnnaSearch = () => {
+    if (!searchQuery.trim()) return;
+    window.open(`https://annas-archive.org/search?q=${encodeURIComponent(searchQuery)}`, '_blank');
+  };
+
   const inLibrary = (id: number) =>
     library.some((b) => b.title.toLowerCase().includes(String(id)));
 
@@ -83,6 +112,89 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
 
   return (
     <div className="space-y-8 pb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Global Search Bar */}
+      <section className="px-6 relative z-30">
+        <form onSubmit={handleSearch} className="relative flex items-center gap-2">
+          <div className="relative flex-1">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-xl opacity-40 pointer-events-none">search</span>
+            <input
+              type="text"
+              placeholder="Search books & authors..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-14 rounded-3xl pl-12 pr-4 text-sm outline-none transition-all bg-white/5 border border-white/10 focus:border-primary/50 focus:bg-white/10"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isSearching || !searchQuery.trim()}
+            className="h-14 px-5 rounded-3xl bg-primary text-white font-bold text-xs uppercase tracking-widest disabled:opacity-50 transition-all hover:bg-primary/90 flex items-center gap-2"
+          >
+            {isSearching ? <div className="size-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : 'Search'}
+          </button>
+        </form>
+        {searchQuery.trim() && (
+          <button
+            onClick={handleAnnaSearch}
+            className="mt-3 w-full py-3 rounded-2xl glass border border-white/5 flex items-center justify-center gap-2 hover:bg-white/5 transition-all text-xs font-bold opacity-80"
+          >
+            <span className="material-symbols-outlined text-sm">public</span> Search in Anna's Archive
+          </button>
+        )}
+      </section>
+
+      {/* Search Results */}
+      {hasSearched && (
+        <section className="px-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold tracking-tight">Search Results</h2>
+            <button onClick={() => { setHasSearched(false); setSearchQuery(''); }} className="text-xs font-bold opacity-40 uppercase tracking-widest hover:text-primary transition-colors">Clear</button>
+          </div>
+          {isSearching ? (
+             <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-4">
+               {[1, 2, 3].map(i => <Skeleton key={i} />)}
+             </div>
+          ) : searchResults.length === 0 ? (
+            <div className="glass rounded-2xl p-6 text-center opacity-40 border border-white/5">
+              <span className="material-symbols-outlined text-3xl mb-2">search_off</span>
+              <p className="text-xs font-medium">No results found on Project Gutenberg.</p>
+            </div>
+          ) : (
+            <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 pb-4">
+              {searchResults.map((book) => (
+                <div key={book.id} className="relative flex-none w-[85vw] aspect-[4/5] rounded-3xl overflow-hidden snap-center group shadow-2xl">
+                  <img
+                    src={getCover(book)}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    alt={book.title}
+                    onError={(e) => { (e.target as HTMLImageElement).src = `https://picsum.photos/seed/gb${book.id}/400/600`; }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                  <div className="absolute bottom-5 left-5 right-5 glass rounded-2xl p-4 flex justify-between items-center gap-3">
+                    <div className="min-w-0">
+                      <p className="text-white font-bold text-base leading-tight line-clamp-2">{book.title}</p>
+                      <p className="text-slate-300 text-[10px] font-bold uppercase tracking-[0.15em] mt-1 truncate">
+                        {book.authors[0] ? formatAuthor(book.authors[0].name) : 'Unknown'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleAdd(book)}
+                      disabled={downloading === book.id}
+                      className="size-11 rounded-full bg-primary hover:bg-primary/90 text-white flex items-center justify-center transition-all hover:scale-110 shadow-lg shrink-0 disabled:opacity-60"
+                    >
+                      {downloading === book.id
+                        ? <div className="size-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        : <span className="material-symbols-outlined text-xl">download</span>
+                      }
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Continue Reading */}
       {lastRead && (
         <section className="px-6">

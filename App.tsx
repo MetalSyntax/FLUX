@@ -5,6 +5,7 @@ import Library from './components/Library';
 import ReaderView from './components/ReaderView';
 import Profile from './components/Profile';
 import Discover from './components/Discover';
+import Stats from './components/Stats';
 import BottomNav from './components/BottomNav';
 import TopNav from './components/TopNav';
 import * as db from './db';
@@ -173,6 +174,10 @@ const App: React.FC = () => {
 
         {currentView === ViewType.PROFILE && (
           <Profile settings={settings} onUpdate={handleUpdateSettings} library={library} />
+        )}
+
+        {currentView === ViewType.STATS && (
+          <Stats library={library} settings={settings} />
         )}
 
         {currentView === ViewType.READER && selectedBook && (
