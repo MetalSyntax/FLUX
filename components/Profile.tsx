@@ -7,6 +7,8 @@ interface ProfileProps {
   settings: UserSettings;
   onUpdate: (s: UserSettings) => void;
   library: Book[];
+  onCheckUpdate?: () => void;
+  isCheckingUpdate?: boolean;
 }
 
 const COLLECTION_COLORS = ['#2563eb', '#7c3aed', '#dc2626', '#16a34a', '#d97706', '#0891b2'];
@@ -31,7 +33,7 @@ function calculateStreak(sessions: ReadingSession[]): number {
   return streak;
 }
 
-const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library }) => {
+const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckUpdate, isCheckingUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(settings.name);
   const [storageUsed, setStorageUsed] = useState('0 MB');
@@ -254,6 +256,26 @@ const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library }) => {
             arrow_forward
           </span>
         </button>
+
+        {onCheckUpdate && (
+          <button
+            onClick={onCheckUpdate}
+            disabled={isCheckingUpdate}
+            className="w-full glass p-4 rounded-2xl flex items-center justify-between group hover:border-primary/30 transition-all disabled:opacity-50"
+          >
+            <div className="flex items-center gap-3">
+              {isCheckingUpdate ? (
+                <div className="size-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+              ) : (
+                <span className="material-symbols-outlined opacity-40">update</span>
+              )}
+              <p className="text-xs font-bold">Check for Updates</p>
+            </div>
+            {!isCheckingUpdate && (
+              <span className="text-[10px] opacity-40 uppercase tracking-widest group-hover:text-primary transition-colors">Check</span>
+            )}
+          </button>
+        )}
       </div>
 
       <div className="p-5 glass rounded-2xl text-center">

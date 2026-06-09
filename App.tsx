@@ -24,6 +24,9 @@ const App: React.FC = () => {
     dailyGoal: 10,
   });
 
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -37,7 +40,46 @@ const App: React.FC = () => {
       }
     };
     init();
+    checkForUpdates();
   }, []);
+
+  const checkForUpdates = async (manual = false) => {
+    if (manual) setIsCheckingUpdate(true);
+    try {
+      const res = await fetch('https://api.github.com/repos/MetalSyntax/FLUX/commits/main');
+      const data = await res.json();
+      if (!data.sha) throw new Error('No sha');
+      const latestSha = data.sha;
+      const currentSha = localStorage.getItem('flux_version_sha');
+      
+      if (!currentSha) {
+        localStorage.setItem('flux_version_sha', latestSha);
+        if (manual) alert('You are already on the latest version!');
+      } else if (currentSha !== latestSha) {
+        setUpdateAvailable(true);
+      } else {
+        if (manual) alert('You are already on the latest version!');
+      }
+    } catch {
+      if (manual) alert('Could not check for updates. Try again later.');
+    } finally {
+      if (manual) setIsCheckingUpdate(false);
+    }
+  };
+
+  const handleUpdateAccept = async () => {
+    try {
+      const res = await fetch('https://api.github.com/repos/MetalSyntax/FLUX/commits/main');
+      const data = await res.json();
+      localStorage.setItem('flux_version_sha', data.sha);
+      // Clear all caches so PWA fetches the new deployment
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(name => caches.delete(name)));
+      window.location.reload();
+    } catch {
+      setUpdateAvailable(false);
+    }
+  };
 
   const applyTheme = (theme: string) => {
     const root = document.documentElement;
@@ -173,7 +215,13 @@ const App: React.FC = () => {
         )}
 
         {currentView === ViewType.PROFILE && (
-          <Profile settings={settings} onUpdate={handleUpdateSettings} library={library} />
+          <Profile 
+            settings={settings} 
+            onUpdate={handleUpdateSettings} 
+            library={library} 
+            onCheckUpdate={() => checkForUpdates(true)}
+            isCheckingUpdate={isCheckingUpdate}
+          />
         )}
 
         {currentView === ViewType.STATS && (
@@ -210,6 +258,34 @@ const App: React.FC = () => {
           <div className="bg-white/10 p-8 rounded-3xl flex flex-col items-center gap-4 border border-white/20">
             <div className="size-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
             <p className="text-white font-bold tracking-widest uppercase text-sm">Loading Book...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Update Modal */}
+      {updateAvailable && (
+        <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="w-full max-w-sm glass-premium rounded-3xl p-6 text-center shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-500">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-primary" />
+            <div className="size-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4 text-primary">
+              <span className="material-symbols-outlined text-3xl">update</span>
+            </div>
+            <h3 className="text-xl font-bold mb-2">Update Available</h3>
+            <p className="text-xs opacity-60 mb-6">A new version of FLUX has been pushed to GitHub. Would you like to update the app now?</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setUpdateAvailable(false)} 
+                className="flex-1 py-3 rounded-2xl bg-white/5 hover:bg-white/10 font-bold text-xs transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleUpdateAccept} 
+                className="flex-1 py-3 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-xs shadow-lg transition-colors"
+              >
+                Update Now
+              </button>
+            </div>
           </div>
         </div>
       )}
