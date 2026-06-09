@@ -50,6 +50,19 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
 
   useEffect(() => {
     const load = async () => {
+      const cached = localStorage.getItem('flux_gutenberg_home');
+      if (cached) {
+        try {
+          const { f, p } = JSON.parse(cached);
+          if (f.length && p.length) {
+            setFeatured(f);
+            setPopular(p);
+            setLoading(false);
+            // Don't return, we can still fetch in background to refresh cache silently
+          }
+        } catch {}
+      }
+
       try {
         const res = await fetch(
           'https://gutendex.com/books/?sort=popular&mime_type=application%2Fepub%2Bzip&page=1'
@@ -57,10 +70,13 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
         if (!res.ok) throw new Error('API error');
         const data = await res.json();
         const results: GBook[] = data.results || [];
-        setFeatured(results.slice(0, 3));
-        setPopular(results.slice(3, 11));
+        const f = results.slice(0, 3);
+        const p = results.slice(3, 11);
+        setFeatured(f);
+        setPopular(p);
+        localStorage.setItem('flux_gutenberg_home', JSON.stringify({ f, p }));
       } catch {
-        setError(true);
+        if (!cached) setError(true);
       } finally {
         setLoading(false);
       }
@@ -112,11 +128,24 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
     setIsSearching(true);
     setHasSearched(true);
     setError(false);
+    
+    const cacheKey = `flux_search_${query.toLowerCase().trim()}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        setSearchResults(JSON.parse(cached));
+        setIsSearching(false);
+        return;
+      } catch {}
+    }
+
     try {
       const res = await fetch(`https://gutendex.com/books/?search=${encodeURIComponent(query)}&mime_type=application%2Fepub%2Bzip`);
       if (!res.ok) throw new Error('Search failed');
       const data = await res.json();
-      setSearchResults(data.results || []);
+      const results = data.results || [];
+      setSearchResults(results);
+      sessionStorage.setItem(cacheKey, JSON.stringify(results));
     } catch {
       setError(true);
     } finally {
