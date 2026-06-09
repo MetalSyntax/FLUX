@@ -97,7 +97,7 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
     } catch {
       try {
         // Fallback using CORS proxy to ensure we get the blob and keep the user in the app
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(epubUrl)}`;
+        const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(epubUrl)}`;
         const resProxy = await fetch(proxyUrl);
         if (!resProxy.ok) throw new Error('proxy fetch failed');
         const blobProxy = await resProxy.blob();
