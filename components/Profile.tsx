@@ -9,6 +9,7 @@ interface ProfileProps {
   library: Book[];
   onCheckUpdate?: () => void;
   isCheckingUpdate?: boolean;
+  onNavigate?: (view: string) => void;
 }
 
 const COLLECTION_COLORS = ['#2563eb', '#7c3aed', '#dc2626', '#16a34a', '#d97706', '#0891b2'];
@@ -33,7 +34,7 @@ function calculateStreak(sessions: ReadingSession[]): number {
   return streak;
 }
 
-const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckUpdate, isCheckingUpdate }) => {
+const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckUpdate, isCheckingUpdate, onNavigate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(settings.name);
   const [storageUsed, setStorageUsed] = useState('0 MB');
@@ -256,6 +257,23 @@ const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckU
             arrow_forward
           </span>
         </button>
+
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <button
+            onClick={() => onNavigate && onNavigate('terms')}
+            className="glass p-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-white/5 transition-all"
+          >
+            <span className="material-symbols-outlined text-[14px] opacity-40">gavel</span>
+            <span className="text-[10px] font-bold opacity-80">Terms & Conds</span>
+          </button>
+          <button
+            onClick={() => onNavigate && onNavigate('privacy')}
+            className="glass p-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-white/5 transition-all"
+          >
+            <span className="material-symbols-outlined text-[14px] opacity-40">shield</span>
+            <span className="text-[10px] font-bold opacity-80">Privacy Policy</span>
+          </button>
+        </div>
 
         {onCheckUpdate && (
           <button

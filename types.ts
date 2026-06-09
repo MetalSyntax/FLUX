@@ -10,7 +10,9 @@ export enum ViewType {
   DISCOVER = 'discover',
   PROFILE = 'profile',
   READER = 'reader',
-  STATS = 'stats'
+  STATS = 'stats',
+  TERMS = 'terms',
+  PRIVACY = 'privacy'
 }
 
 export interface UserSettings {

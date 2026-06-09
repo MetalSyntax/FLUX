@@ -8,6 +8,8 @@ import Discover from './components/Discover';
 import Stats from './components/Stats';
 import BottomNav from './components/BottomNav';
 import TopNav from './components/TopNav';
+import Terms from './components/Terms';
+import Privacy from './components/Privacy';
 import * as db from './db';
 
 const App: React.FC = () => {
@@ -187,8 +189,18 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen relative flex flex-col overflow-x-hidden transition-colors duration-300">
-      {currentView !== ViewType.READER && (
+      {currentView !== ViewType.READER && currentView !== ViewType.TERMS && currentView !== ViewType.PRIVACY && (
         <TopNav settings={settings} onProfileClick={() => setCurrentView(ViewType.PROFILE)} />
+      )}
+
+      {/* Basic header with back button for legal pages */}
+      {(currentView === ViewType.TERMS || currentView === ViewType.PRIVACY) && (
+        <div className="pt-12 pb-4 px-6 flex items-center gap-4">
+          <button onClick={() => setCurrentView(ViewType.PROFILE)} className="size-10 rounded-full glass flex items-center justify-center hover:bg-white/10 transition-colors">
+            <span className="material-symbols-outlined">arrow_back</span>
+          </button>
+          <h2 className="font-bold tracking-widest uppercase text-sm opacity-60">Back to Profile</h2>
+        </div>
       )}
 
       <main className={`flex-1 z-10 ${currentView !== ViewType.READER ? 'pb-28 pt-4' : ''}`}>
@@ -221,8 +233,12 @@ const App: React.FC = () => {
             library={library} 
             onCheckUpdate={() => checkForUpdates(true)}
             isCheckingUpdate={isCheckingUpdate}
+            onNavigate={(view: string) => setCurrentView(view as ViewType)}
           />
         )}
+
+        {currentView === ViewType.TERMS && <Terms />}
+        {currentView === ViewType.PRIVACY && <Privacy />}
 
         {currentView === ViewType.STATS && (
           <Stats library={library} settings={settings} />
@@ -238,7 +254,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {currentView !== ViewType.READER && (
+      {currentView !== ViewType.READER && currentView !== ViewType.TERMS && currentView !== ViewType.PRIVACY && (
         <BottomNav
           activeView={currentView}
           onNavigate={setCurrentView}
