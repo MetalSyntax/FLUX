@@ -34,11 +34,13 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
   const [downloading, setDownloading] = useState<number | null>(null);
   const [error, setError] = useState(false);
   
-  // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<GBook[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  
+  // In-app browser state
+  const [iframeUrl, setIframeUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -71,21 +73,33 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
       const file = new File([blob], `${gbook.title}.epub`, { type: 'application/epub+zip' });
       onAddBook(file);
     } catch {
-      // CORS or network error — open download URL in new tab as fallback
-      window.open(epubUrl, '_blank');
+      // CORS or network error — trigger download without leaving the app
+      const a = document.createElement('a');
+      a.href = epubUrl;
+      a.download = '';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      alert("Download started. Please use the '+' button to add it once finished.");
     } finally {
       setDownloading(null);
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAnnaSearch = () => {
     if (!searchQuery.trim()) return;
+    // Using one of the requested mirrors
+    setIframeUrl(`https://annas-archive.gl/search?q=${encodeURIComponent(searchQuery)}`);
+  };
+
+  const executeSearch = async (query: string) => {
+    if (!query.trim()) return;
+    setSearchQuery(query);
     setIsSearching(true);
     setHasSearched(true);
     setError(false);
     try {
-      const res = await fetch(`https://gutendex.com/books/?search=${encodeURIComponent(searchQuery)}&mime_type=application%2Fepub%2Bzip`);
+      const res = await fetch(`https://gutendex.com/books/?search=${encodeURIComponent(query)}&mime_type=application%2Fepub%2Bzip`);
       if (!res.ok) throw new Error('Search failed');
       const data = await res.json();
       setSearchResults(data.results || []);
@@ -96,9 +110,9 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
     }
   };
 
-  const handleAnnaSearch = () => {
-    if (!searchQuery.trim()) return;
-    window.open(`https://annas-archive.org/search?q=${encodeURIComponent(searchQuery)}`, '_blank');
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    executeSearch(searchQuery);
   };
 
   const inLibrary = (id: number) =>
@@ -321,7 +335,7 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
             ].map((g) => (
               <button
                 key={g.label}
-                onClick={() => window.open(`https://gutendex.com/books/?topic=${g.label.toLowerCase()}`, '_blank')}
+                onClick={() => executeSearch(g.label)}
                 className="glass rounded-2xl p-4 flex items-center gap-3 border border-white/5 hover:border-white/20 transition-all group"
               >
                 <div className="size-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: g.color + '22' }}>
@@ -332,6 +346,29 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
             ))}
           </div>
         </section>
+      )}
+
+      {/* In-app Browser Overlay */}
+      {iframeUrl && (
+        <div className="fixed inset-0 z-[300] bg-black flex flex-col animate-in fade-in zoom-in-95 duration-300">
+          <div className="h-16 flex items-center justify-between px-4 bg-slate-900 border-b border-white/10 shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="material-symbols-outlined text-primary">public</span>
+              <span className="text-xs font-mono opacity-60 truncate">{iframeUrl}</span>
+            </div>
+            <button
+              onClick={() => setIframeUrl(null)}
+              className="size-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors shrink-0"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          <iframe
+            src={iframeUrl}
+            className="w-full flex-1 bg-white"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+          />
+        </div>
       )}
     </div>
   );
