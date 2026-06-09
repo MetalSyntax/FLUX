@@ -38,6 +38,12 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
   const [searchResults, setSearchResults] = useState<GBook[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3500);
+  };
   
   // In-app browser state
   const [iframeUrl, setIframeUrl] = useState<string | null>(null);
@@ -73,14 +79,17 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
       const file = new File([blob], `${gbook.title}.epub`, { type: 'application/epub+zip' });
       onAddBook(file);
     } catch {
-      // CORS or network error — trigger download without leaving the app
-      const a = document.createElement('a');
-      a.href = epubUrl;
-      a.download = '';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      alert("Download started. Please use the '+' button to add it once finished.");
+      try {
+        // Fallback using CORS proxy to ensure we get the blob and keep the user in the app
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(epubUrl)}`;
+        const resProxy = await fetch(proxyUrl);
+        if (!resProxy.ok) throw new Error('proxy fetch failed');
+        const blobProxy = await resProxy.blob();
+        const fileProxy = new File([blobProxy], `${gbook.title}.epub`, { type: 'application/epub+zip' });
+        onAddBook(fileProxy);
+      } catch (e) {
+        showToast("Error downloading the book. The file might be too large or unavailable.");
+      }
     } finally {
       setDownloading(null);
     }
@@ -131,6 +140,13 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
 
   return (
     <div className="space-y-8 pb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[400] glass border border-red-500/50 bg-red-500/20 text-white px-6 py-3 rounded-full shadow-2xl text-xs font-bold animate-in slide-in-from-top-4 fade-in duration-300">
+          {toast}
+        </div>
+      )}
+
       {/* Global Search Bar */}
       <section className="px-6 relative z-30">
         <form onSubmit={handleSearch} className="relative flex items-center gap-2">
