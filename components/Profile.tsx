@@ -297,7 +297,7 @@ const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckU
       </div>
 
       <div className="p-5 glass rounded-2xl text-center">
-        <p className="text-xs opacity-40">FLUX v2.0</p>
+        <p className="text-xs opacity-40">FLUX v1.0</p>
         <p className="text-[9px] opacity-20 mt-1">All data is stored locally in your browser.</p>
       </div>
     </div>
