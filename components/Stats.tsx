@@ -22,7 +22,7 @@ const Stats: React.FC<StatsProps> = ({ library, settings }) => {
   }, [library]);
 
   const StatCard = ({ title, value, icon, color }: { title: string, value: string | number, icon: string, color: string }) => (
-    <div className="glass rounded-3xl p-5 border border-white/5 relative overflow-hidden group hover:border-white/20 transition-all">
+    <div className="glass rounded-3xl p-5 border border-ui-border relative overflow-hidden group hover:border-primary/30 transition-all">
       <div className="absolute -right-4 -top-4 size-20 rounded-full opacity-10 transition-transform group-hover:scale-150" style={{ backgroundColor: color }} />
       <div className="size-10 rounded-xl mb-4 flex items-center justify-center shadow-lg" style={{ backgroundColor: `${color}22` }}>
         <span className="material-symbols-outlined text-xl" style={{ color }}>{icon}</span>
@@ -40,13 +40,13 @@ const Stats: React.FC<StatsProps> = ({ library, settings }) => {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <StatCard title="Books in Library" value={totalBooks} icon="library_books" color="#2563eb" />
+        <StatCard title="Books in Library" value={totalBooks} icon="library_books" color="#00c08b" />
         <StatCard title="Completed" value={completedBooks} icon="task_alt" color="#16a34a" />
         <StatCard title="Pages Read" value={totalPagesRead} icon="menu_book" color="#7c3aed" />
         <StatCard title="Favorites" value={favoriteBooks} icon="favorite" color="#dc2626" />
       </div>
 
-      <div className="glass rounded-3xl p-6 border border-white/5 mt-6 relative overflow-hidden">
+      <div className="glass rounded-3xl p-6 border border-ui-border mt-6 relative overflow-hidden">
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest mb-1">Daily Goal</p>

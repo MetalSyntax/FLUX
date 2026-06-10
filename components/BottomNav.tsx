@@ -15,7 +15,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate, onAddClic
       <button
         onClick={() => onNavigate(view)}
         className={`flex-1 flex flex-col items-center justify-center py-2 transition-all duration-300 gap-1 ${
-          isActive ? 'text-primary' : 'text-white/30 hover:text-white/60'
+          isActive ? 'text-primary' : 'text-ui-text-muted hover:opacity-80'
         }`}
       >
         <span
@@ -31,7 +31,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate, onAddClic
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 px-6 pb-6">
-      <div className="relative mx-auto max-w-md h-[72px] rounded-[2rem] glass-dark flex items-center border border-white/10 shadow-2xl overflow-visible px-2">
+      <div className="relative mx-auto max-w-md h-[72px] rounded-[2rem] glass-dark flex items-center border border-ui-border shadow-2xl overflow-visible px-2">
         {/* Left nav items */}
         <div className="flex flex-1 justify-around">
           <NavItem view={ViewType.HOME} icon="grid_view" label="Library" />
@@ -43,7 +43,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate, onAddClic
           <button
             onClick={onAddClick}
             className="size-16 rounded-full bg-primary flex items-center justify-center shadow-xl shadow-primary/40 active:scale-90 transition-all border-[6px] hover:brightness-110"
-            style={{ borderColor: '#101628', background: '#2563eb' }}
+            style={{ borderColor: 'var(--ui-bg)', background: '#00c08b' }}
           >
             <span className="material-symbols-outlined text-3xl font-bold text-white">add</span>
           </button>

@@ -12,7 +12,7 @@ const TopNav: React.FC<TopNavProps> = ({ settings, onProfileClick }) => {
     <nav className="sticky top-0 z-50 px-6 pt-10 pb-4 flex items-center justify-between">
       <button
         onClick={onProfileClick}
-        className="size-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden active:scale-95 transition-transform"
+        className="size-10 rounded-full bg-ui-bg-accented border border-ui-border flex items-center justify-center overflow-hidden active:scale-95 transition-transform"
       >
         <img src={settings.avatar} alt="Profile" className="w-full h-full object-cover" />
       </button>

@@ -6,7 +6,8 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import ePub, { Rendition } from 'epubjs';
 import JSZip from 'jszip';
 // @ts-ignore
-import { createExtractorFromData } from 'unrar-js';
+import { createExtractorFromData } from 'node-unrar-js';
+import unrarWasmUrl from 'node-unrar-js/esm/js/unrar.wasm?url';
 import { Buffer } from 'buffer';
 import * as db from '../db';
 
@@ -21,7 +22,7 @@ interface ReaderViewProps {
   onProgressUpdate: (bookId: string, page: number, total?: number, cover?: string, cfi?: string) => void;
 }
 
-const BOOKMARK_COLORS = ['#2563eb', '#7c3aed', '#dc2626', '#16a34a', '#f59e0b'];
+const BOOKMARK_COLORS = ['#00c08b', '#7c3aed', '#dc2626', '#16a34a', '#f59e0b'];
 
 const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProgressUpdate }) => {
   const [currentPage, setCurrentPage] = useState(book.currentPage || 1);
@@ -70,7 +71,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
   useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
 
   const themeColors = {
-    dark: { bg: '#0b0e1a', text: '#ffffff', glass: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)' },
+    dark: { bg: '#0a0a0a', text: '#ffffff', glass: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)' },
     black: { bg: '#000000', text: '#ffffff', glass: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.08)' },
     white: { bg: '#ffffff', text: '#0f172a', glass: 'rgba(15,23,42,0.05)', border: 'rgba(15,23,42,0.1)' },
   };
@@ -219,11 +220,19 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
             });
             await Promise.all(promises);
           } else {
-            const extractor = await createExtractorFromData({ data: arrayBuffer });
-            const extracted = extractor.extractAll();
-            for (const file of extracted.files) {
-              if (file.fileHeader.name.match(/\.(jpg|jpeg|png|webp|gif)$/i) && !file.extractionError) {
-                images.push({ name: file.fileHeader.name, url: URL.createObjectURL(new Blob([file.extract])) });
+            const wasmRes = await fetch(unrarWasmUrl);
+            const wasmBinary = await wasmRes.arrayBuffer();
+            const extractor = await createExtractorFromData({ data: arrayBuffer, wasmBinary });
+            
+            const list = extractor.getFileList();
+            const fileHeaders = [...list.fileHeaders].filter((f: any) => !f.flags.directory && f.name.match(/\.(jpg|jpeg|png|webp|gif)$/i));
+            
+            const extracted = extractor.extract({ files: fileHeaders.map((f: any) => f.name) });
+            const extractedFiles = [...extracted.files];
+            
+            for (const file of extractedFiles) {
+              if (file.extraction) {
+                images.push({ name: file.fileHeader.name, url: URL.createObjectURL(new Blob([file.extraction])) });
               }
             }
           }
@@ -451,7 +460,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
       onTouchEnd={handleTouchEnd}
     >
       {/* Click interaction zones (non-EPUB) */}
-      {!loading && !error && book.type !== BookType.EPUB && (
+      {!loading && !error && book.type !== BookType.EPUB && !scrollMode && (
         <div className="absolute inset-0 z-10 flex">
           <div className="flex-1 cursor-w-resize" onClick={goToPrev} />
           <div className="w-1/3 cursor-pointer" onClick={() => setShowControls((p) => !p)} />
@@ -500,7 +509,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
                       : '')
               }`}
             />
-            {!loading && (
+            {!loading && !scrollMode && (
               <div className="absolute inset-0 z-20 flex pointer-events-none">
                 <div className="flex-1 cursor-w-resize pointer-events-auto" onClick={goToPrev} />
                 <div className="w-1/3 cursor-pointer pointer-events-auto" onClick={() => setShowControls((p) => !p)} />
@@ -514,7 +523,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
           <>
             {/* PDF — scroll mode */}
             {book.type === BookType.PDF && scrollMode && (
-              <div className="w-full h-full overflow-y-auto py-6 px-4 space-y-4">
+              <div className="w-full h-full overflow-y-auto py-6 px-4 space-y-4" onClick={() => setShowControls((p) => !p)}>
                 {renderingScroll && scrollPages.length === 0 && (
                   <div className="flex justify-center py-20">
                     <div className="size-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
@@ -544,8 +553,17 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
               </div>
             )}
 
+            {/* CBR/CBZ — scroll mode */}
+            {book.type === BookType.CBR && scrollMode && (
+              <div className="w-full h-full overflow-y-auto py-0 px-0 space-y-0 bg-black hide-scrollbar flex flex-col items-center" onClick={() => setShowControls((p) => !p)}>
+                {comicImages.map((src, i) => (
+                  <img key={i} src={src} className="w-full max-w-4xl object-contain" alt={`Page ${i + 1}`} loading="lazy" />
+                ))}
+              </div>
+            )}
+
             {/* CBR/CBZ — single page */}
-            {book.type === BookType.CBR && !doublePage && comicImages[currentPage - 1] && (
+            {book.type === BookType.CBR && !doublePage && !scrollMode && comicImages[currentPage - 1] && (
               <div className="relative h-full w-full flex items-center justify-center p-4 lg:p-10 page-flip">
                 <img
                   key={currentPage}
@@ -563,7 +581,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
             )}
 
             {/* CBR/CBZ — double page */}
-            {book.type === BookType.CBR && doublePage && (
+            {book.type === BookType.CBR && doublePage && !scrollMode && (
               <div className="relative h-full w-full flex items-center justify-center gap-1 p-2 lg:p-6">
                 {comicImages[currentPage - 1] && (
                   <img src={comicImages[currentPage - 1]} className="max-h-full max-w-[49%] object-contain shadow-xl rounded-sm" alt={`Page ${currentPage}`} />
@@ -599,7 +617,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
               onClick={addBookmark}
               className="size-10 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all active:scale-90 border"
               style={isBookmarkedOnCurrentPage
-                ? { backgroundColor: '#2563eb22', borderColor: '#2563eb66', color: '#2563eb' }
+                ? { backgroundColor: '#00c08b22', borderColor: '#00c08b66', color: '#00c08b' }
                 : { backgroundColor: ct.glass, borderColor: ct.border }
               }
             >
@@ -636,7 +654,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
         {/* Bookmarks Panel */}
         <div
           className={`absolute top-full right-4 sm:right-6 mt-4 w-72 rounded-3xl p-5 space-y-4 shadow-2xl transition-all duration-500 transform border z-[130] ${showBookmarks && showControls ? 'translate-y-0 opacity-100' : '-translate-y-10 opacity-0 pointer-events-none'}`}
-          style={{ backgroundColor: settings.theme === 'white' ? '#f8fafc' : '#1a1d2e', borderColor: ct.border }}
+          style={{ backgroundColor: settings.theme === 'white' ? '#f5f5f5' : '#171717', borderColor: ct.border }}
         >
           <div className="flex items-center justify-between">
             <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Bookmarks</p>
@@ -667,7 +685,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
         {/* Settings Panel */}
         <div
           className={`absolute top-full right-4 sm:right-6 mt-4 w-72 rounded-3xl p-6 space-y-6 shadow-2xl transition-all duration-500 transform border z-[130] ${showSettings && showControls && !showBookmarks ? 'translate-y-0 opacity-100' : '-translate-y-10 opacity-0 pointer-events-none'}`}
-          style={{ backgroundColor: settings.theme === 'white' ? '#f8fafc' : '#1a1d2e', borderColor: ct.border }}
+          style={{ backgroundColor: settings.theme === 'white' ? '#f5f5f5' : '#171717', borderColor: ct.border }}
         >
           {/* Brightness */}
           <div className="space-y-3">
@@ -712,8 +730,8 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
             </div>
           )}
 
-          {/* Scroll mode (PDF / EPUB) */}
-          {(book.type === BookType.PDF || book.type === BookType.EPUB) && (
+          {/* Scroll mode (PDF / EPUB / CBR) */}
+          {(book.type === BookType.PDF || book.type === BookType.EPUB || book.type === BookType.CBR) && (
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Scroll Mode</p>
@@ -721,7 +739,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
               </div>
               <button
                 onClick={() => setScrollMode((p) => !p)}
-                className={`relative w-10 h-5 rounded-full transition-colors ${scrollMode ? 'bg-primary' : 'bg-white/10'}`}
+                className={`relative w-10 h-5 rounded-full transition-colors ${scrollMode ? 'bg-primary' : 'bg-ui-bg-accented'}`}
               >
                 <div className={`absolute top-0.5 size-4 bg-white rounded-full shadow transition-all ${scrollMode ? 'left-5' : 'left-0.5'}`} />
               </button>
@@ -737,7 +755,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
               </div>
               <button
                 onClick={() => setDoublePage((p) => !p)}
-                className={`relative w-10 h-5 rounded-full transition-colors ${doublePage ? 'bg-primary' : 'bg-white/10'}`}
+                className={`relative w-10 h-5 rounded-full transition-colors ${doublePage ? 'bg-primary' : 'bg-ui-bg-accented'}`}
               >
                 <div className={`absolute top-0.5 size-4 bg-white rounded-full shadow transition-all ${doublePage ? 'left-5' : 'left-0.5'}`} />
               </button>
@@ -758,7 +776,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
                 <span className="material-symbols-outlined text-base">chevron_left</span> Prev
               </button>
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-[10px] font-bold px-3 py-1 rounded-full border shadow-lg" style={{ backgroundColor: 'rgba(37,99,235,0.15)', borderColor: 'rgba(37,99,235,0.3)', color: '#2563eb' }}>
+                <span className="text-[10px] font-bold px-3 py-1 rounded-full border shadow-lg" style={{ backgroundColor: 'rgba(0,192,139,0.15)', borderColor: 'rgba(0,192,139,0.3)', color: '#00c08b' }}>
                   {currentPage} <span className="opacity-40 mx-1">/</span> {totalPages}
                 </span>
                 {totalPages > 0 && <span className="text-[8px] opacity-30 font-bold uppercase tracking-widest">{Math.round((currentPage / totalPages) * 100)}%</span>}

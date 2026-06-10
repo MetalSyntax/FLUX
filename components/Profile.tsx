@@ -12,7 +12,7 @@ interface ProfileProps {
   onNavigate?: (view: string) => void;
 }
 
-const COLLECTION_COLORS = ['#2563eb', '#7c3aed', '#dc2626', '#16a34a', '#d97706', '#0891b2'];
+const COLLECTION_COLORS = ['#00c08b', '#7c3aed', '#dc2626', '#16a34a', '#d97706', '#0891b2'];
 
 function calculateStreak(sessions: ReadingSession[]): number {
   if (sessions.length === 0) return 0;
@@ -111,7 +111,7 @@ const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckU
       {/* Avatar & Name */}
       <div className="flex flex-col items-center py-4">
         <div className="relative group">
-          <div className="size-24 rounded-3xl overflow-hidden border-2 border-primary/20 p-1 bg-white/5">
+          <div className="size-24 rounded-3xl overflow-hidden border-2 border-primary/20 p-1 bg-ui-bg-muted">
             <img src={settings.avatar} className="w-full h-full rounded-2xl object-cover" alt="Avatar" />
           </div>
           <label className="absolute -bottom-2 -right-2 size-8 bg-primary rounded-lg flex items-center justify-center cursor-pointer shadow-lg hover:scale-110 transition-transform">
@@ -125,7 +125,7 @@ const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckU
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-center font-bold"
+              className="bg-ui-bg-accented border border-ui-border rounded-lg px-2 py-1 text-center font-bold"
               onBlur={() => { onUpdate({ ...settings, name: newName }); setIsEditing(false); }}
               autoFocus
             />
@@ -154,10 +154,10 @@ const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckU
           {/* Ring */}
           <div className="relative shrink-0">
             <svg width="72" height="72" className="-rotate-90">
-              <circle cx="36" cy="36" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="5" />
+              <circle cx="36" cy="36" r={r} fill="none" style={{ stroke: 'var(--ui-border)' }} strokeWidth="5" />
               <circle
                 cx="36" cy="36" r={r}
-                fill="none" stroke="#2563eb" strokeWidth="5"
+                fill="none" stroke="#00c08b" strokeWidth="5"
                 strokeDasharray={circ}
                 strokeDashoffset={strokeDashoffset}
                 strokeLinecap="round"
@@ -184,7 +184,7 @@ const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckU
                   type="number"
                   value={goalInput}
                   onChange={(e) => setGoalInput(e.target.value)}
-                  className="w-16 bg-white/10 border border-white/20 rounded px-2 py-0.5 text-sm text-center"
+                  className="w-16 bg-ui-bg-accented border border-ui-border rounded px-2 py-0.5 text-sm text-center"
                   onKeyDown={(e) => e.key === 'Enter' && saveGoal()}
                   autoFocus
                 />
@@ -198,7 +198,7 @@ const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckU
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-4 gap-3 mt-5 pt-4 border-t border-white/5">
+        <div className="grid grid-cols-4 gap-3 mt-5 pt-4 border-t border-ui-border">
           {[
             { label: 'Today', value: todayMinutes < 60 ? `${todayMinutes}m` : `${Math.floor(todayMinutes / 60)}h` },
             { label: 'Week', value: weekMinutes < 60 ? `${weekMinutes}m` : `${Math.floor(weekMinutes / 60)}h` },
@@ -216,7 +216,7 @@ const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckU
       {/* Theme selector */}
       <div>
         <p className="text-[10px] font-bold opacity-30 uppercase tracking-[0.2em] mb-3 ml-1">Theme</p>
-        <div className="grid grid-cols-3 gap-2 p-1 bg-white/5 rounded-2xl">
+        <div className="grid grid-cols-3 gap-2 p-1 bg-ui-bg-muted rounded-2xl">
           {(['dark', 'black', 'white'] as const).map((t) => (
             <button
               key={t}
@@ -261,14 +261,14 @@ const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckU
         <div className="grid grid-cols-2 gap-3 mt-4">
           <button
             onClick={() => onNavigate && onNavigate('terms')}
-            className="glass p-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-white/5 transition-all"
+            className="glass p-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-ui-bg-accented transition-all"
           >
             <span className="material-symbols-outlined text-[14px] opacity-40">gavel</span>
             <span className="text-[10px] font-bold opacity-80">Terms & Conds</span>
           </button>
           <button
             onClick={() => onNavigate && onNavigate('privacy')}
-            className="glass p-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-white/5 transition-all"
+            className="glass p-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-ui-bg-accented transition-all"
           >
             <span className="material-symbols-outlined text-[14px] opacity-40">shield</span>
             <span className="text-[10px] font-bold opacity-80">Privacy Policy</span>

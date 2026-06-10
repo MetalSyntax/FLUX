@@ -15,12 +15,12 @@ interface LibraryProps {
   settings: UserSettings;
 }
 
-const COLL_COLORS = ['#2563eb', '#7c3aed', '#dc2626', '#16a34a', '#d97706', '#0891b2'];
+const COLL_COLORS = ['#00c08b', '#7c3aed', '#dc2626', '#16a34a', '#d97706', '#0891b2'];
 
 const THEME_COLORS = {
-  dark:  { bg: '#0b0e1a', text: '#ffffff', glass: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.08)', placeholder: 'rgba(255,255,255,0.28)', icon: 'rgba(255,255,255,0.35)' },
-  black: { bg: '#000000', text: '#ffffff', glass: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.07)', placeholder: 'rgba(255,255,255,0.25)', icon: 'rgba(255,255,255,0.30)' },
-  white: { bg: '#f8fafc',  text: '#0f172a', glass: 'rgba(15,23,42,0.06)',   border: 'rgba(15,23,42,0.12)',   placeholder: 'rgba(15,23,42,0.30)',   icon: 'rgba(15,23,42,0.35)'  },
+  dark:  { bg: '#171717', text: '#ffffff', glass: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.08)', placeholder: 'rgba(255,255,255,0.28)', icon: 'rgba(255,255,255,0.35)' },
+  black: { bg: '#0a0a0a', text: '#ffffff', glass: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.06)', placeholder: 'rgba(255,255,255,0.25)', icon: 'rgba(255,255,255,0.30)' },
+  white: { bg: '#f5f5f5',  text: '#0f172a', glass: 'rgba(15,23,42,0.06)',   border: 'rgba(0,0,0,0.10)',      placeholder: 'rgba(15,23,42,0.30)',   icon: 'rgba(15,23,42,0.35)'  },
 };
 
 const Library: React.FC<LibraryProps> = ({
@@ -148,11 +148,11 @@ const Library: React.FC<LibraryProps> = ({
           className="w-full h-14 rounded-3xl pl-12 pr-12 text-sm outline-none transition-all appearance-none"
           style={{
             backgroundColor: ct.glass,
-            border: `1px solid ${searchQuery ? 'rgba(37,99,235,0.45)' : ct.border}`,
+            border: `1px solid ${searchQuery ? 'rgba(0,192,139,0.45)' : ct.border}`,
             color: ct.text,
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            boxShadow: searchQuery ? '0 0 0 3px rgba(37,99,235,0.12)' : 'none',
+            boxShadow: searchQuery ? '0 0 0 3px rgba(0,192,139,0.12)' : 'none',
           }}
         />
 
@@ -175,7 +175,7 @@ const Library: React.FC<LibraryProps> = ({
           <div
             className="absolute top-full left-0 right-0 mt-2 rounded-2xl p-2 shadow-2xl animate-in fade-in slide-in-from-top-2 z-40"
             style={{
-              backgroundColor: settings.theme === 'white' ? '#f1f5f9' : '#1a1d2e',
+              backgroundColor: settings.theme === 'white' ? '#f5f5f5' : '#171717',
               border: `1px solid ${ct.border}`,
               backdropFilter: 'blur(20px)',
             }}
@@ -217,7 +217,7 @@ const Library: React.FC<LibraryProps> = ({
               onContextMenu={(e) => { e.preventDefault(); removeCollection(col.id); }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold shrink-0 border transition-all"
               style={{
-                borderColor: activeCollection === col.id ? col.color : 'rgba(255,255,255,0.1)',
+                borderColor: activeCollection === col.id ? col.color : 'var(--ui-border)',
                 backgroundColor: activeCollection === col.id ? col.color + '33' : 'rgba(255,255,255,0.04)',
                 color: activeCollection === col.id ? col.color : undefined,
               }}
@@ -228,7 +228,7 @@ const Library: React.FC<LibraryProps> = ({
           ))}
           <button
             onClick={() => setShowNewColl(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-bold shrink-0 border border-white/10 opacity-40 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-bold shrink-0 border border-ui-border opacity-40 hover:opacity-80 transition-opacity"
           >
             <span className="material-symbols-outlined text-xs">add</span> New
           </button>
@@ -237,7 +237,7 @@ const Library: React.FC<LibraryProps> = ({
 
       {/* New collection form */}
       {showNewColl && (
-        <div className="glass rounded-2xl p-4 space-y-3 border border-white/10 animate-in fade-in zoom-in-95">
+        <div className="glass rounded-2xl p-4 space-y-3 border border-ui-border animate-in fade-in zoom-in-95">
           <p className="text-xs font-bold opacity-60">New Collection</p>
           <input
             autoFocus
@@ -245,7 +245,7 @@ const Library: React.FC<LibraryProps> = ({
             onChange={(e) => setNewCollName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && createCollection()}
             placeholder="Collection name..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
+            className="w-full bg-ui-bg-muted border border-ui-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
           />
           <div className="flex gap-2">
             {COLL_COLORS.map((c) => (
@@ -283,7 +283,7 @@ const Library: React.FC<LibraryProps> = ({
           {collections.length === 0 && (
             <button
               onClick={() => setShowNewColl(true)}
-              className="px-3 py-1.5 rounded-xl text-[10px] font-bold border border-dashed border-white/20 opacity-40 hover:opacity-70 shrink-0 transition-opacity"
+              className="px-3 py-1.5 rounded-xl text-[10px] font-bold border border-dashed border-ui-border opacity-40 hover:opacity-70 shrink-0 transition-opacity"
             >
               + Collection
             </button>
@@ -291,21 +291,21 @@ const Library: React.FC<LibraryProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          <button onClick={toggleView} className="size-9 glass rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors">
+          <button onClick={toggleView} className="size-9 glass rounded-xl flex items-center justify-center hover:bg-ui-bg-accented transition-colors">
             <span className="material-symbols-outlined text-lg">{isGrid ? 'view_list' : 'grid_view'}</span>
           </button>
           <div className="relative">
-            <button onClick={() => setShowSort(!showSort)} className="size-9 glass rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors">
+            <button onClick={() => setShowSort(!showSort)} className="size-9 glass rounded-xl flex items-center justify-center hover:bg-ui-bg-accented transition-colors">
               <span className="material-symbols-outlined text-lg">sort</span>
             </button>
             {showSort && (
-              <div className="absolute top-full right-0 mt-2 w-40 glass rounded-2xl p-2 border border-white/10 shadow-2xl z-40 animate-in fade-in zoom-in-95">
+              <div className="absolute top-full right-0 mt-2 w-40 glass rounded-2xl p-2 border border-ui-border shadow-2xl z-40 animate-in fade-in zoom-in-95">
                 {(['title', 'author', 'date'] as const).map((opt) => (
                   <button
                     key={opt}
                     onClick={() => { setSortBy(opt); setShowSort(false); db.saveMetadata('sort_pref', opt); }}
                     className={`w-full text-left px-3 py-2.5 text-xs rounded-xl transition-all capitalize ${
-                      sortBy === opt ? 'bg-primary text-white' : 'hover:bg-white/5 opacity-60 hover:opacity-100'
+                      sortBy === opt ? 'bg-primary text-white' : 'hover:bg-ui-bg-muted opacity-60 hover:opacity-100'
                     }`}
                   >
                     By {opt === 'date' ? 'Last Read' : opt}
@@ -331,9 +331,9 @@ const Library: React.FC<LibraryProps> = ({
             {filteredBooks.map((book) => (
               isGrid ? (
                 /* Grid Card */
-                <div key={book.id} className="relative glass rounded-2xl p-3 border border-white/5 hover:border-primary/30 transition-all group active:scale-95">
+                <div key={book.id} className="relative glass rounded-2xl p-3 border border-ui-border hover:border-primary/30 transition-all group active:scale-95">
                   <div onClick={() => onOpenBook(book)} className="cursor-pointer">
-                    <div className="aspect-[3/4] rounded-xl overflow-hidden mb-3 relative bg-slate-800">
+                    <div className="aspect-[3/4] rounded-xl overflow-hidden mb-3 relative bg-ui-bg-accented">
                       {book.coverUrl
                         ? <img src={book.coverUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                         : <div className="w-full h-full flex items-center justify-center opacity-20"><span className="material-symbols-outlined text-5xl">auto_stories</span></div>
@@ -367,10 +367,10 @@ const Library: React.FC<LibraryProps> = ({
                   </div>
                   {/* Context menu */}
                   {bookMenu === book.id && (
-                    <div className="absolute top-8 right-1 z-50 w-44 glass rounded-2xl p-2 border border-white/10 shadow-2xl animate-in fade-in zoom-in-95">
+                    <div className="absolute top-8 right-1 z-50 w-44 glass rounded-2xl p-2 border border-ui-border shadow-2xl animate-in fade-in zoom-in-95">
                       <button
                         onClick={(e) => { e.stopPropagation(); setAddToCollMenu(book.id); }}
-                        className="w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-white/5 flex items-center gap-2"
+                        className="w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-ui-bg-muted flex items-center gap-2"
                       >
                         <span className="material-symbols-outlined text-sm opacity-50">folder_open</span> Add to Collection
                       </button>
@@ -380,7 +380,7 @@ const Library: React.FC<LibraryProps> = ({
                             <button
                               key={c.id}
                               onClick={(e) => { e.stopPropagation(); addBookToCollection(book.id, c.id); }}
-                              className="w-full text-left px-2 py-1.5 text-xs rounded-lg hover:bg-white/5 flex items-center gap-2"
+                              className="w-full text-left px-2 py-1.5 text-xs rounded-lg hover:bg-ui-bg-muted flex items-center gap-2"
                             >
                               <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
                               {c.name}
@@ -399,9 +399,9 @@ const Library: React.FC<LibraryProps> = ({
                 </div>
               ) : (
                 /* List Row */
-                <div key={book.id} className="relative glass rounded-2xl px-4 py-3 border border-white/5 hover:border-primary/20 transition-all flex items-center gap-4 group active:scale-[0.99]">
+                <div key={book.id} className="relative glass rounded-2xl px-4 py-3 border border-ui-border hover:border-primary/20 transition-all flex items-center gap-4 group active:scale-[0.99]">
                   <div onClick={() => onOpenBook(book)} className="flex items-center gap-4 flex-1 cursor-pointer min-w-0">
-                    <div className="size-14 rounded-xl overflow-hidden bg-slate-800 shrink-0">
+                    <div className="size-14 rounded-xl overflow-hidden bg-ui-bg-accented shrink-0">
                       {book.coverUrl
                         ? <img src={book.coverUrl} alt="" className="w-full h-full object-cover" />
                         : <div className="w-full h-full flex items-center justify-center opacity-20"><span className="material-symbols-outlined">auto_stories</span></div>
@@ -414,7 +414,7 @@ const Library: React.FC<LibraryProps> = ({
                       </div>
                       <p className="text-[10px] opacity-40 truncate">{book.author}</p>
                       <div className="flex items-center gap-2 mt-1.5">
-                        <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                        <div className="flex-1 h-1 bg-ui-bg-accented rounded-full overflow-hidden">
                           <div className="h-full bg-primary" style={{ width: `${book.progress}%` }} />
                         </div>
                         <span className="text-[9px] font-bold text-primary shrink-0">{book.progress}%</span>
@@ -422,7 +422,7 @@ const Library: React.FC<LibraryProps> = ({
                     </div>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    <button onClick={() => onFavorite(book.id)} className="size-8 flex items-center justify-center rounded-xl hover:bg-white/10" style={{ color: book.isFavorite ? '#f59e0b' : 'rgba(255,255,255,0.4)' }}>
+                    <button onClick={() => onFavorite(book.id)} className="size-8 flex items-center justify-center rounded-xl hover:bg-ui-bg-accented" style={{ color: book.isFavorite ? '#f59e0b' : 'rgba(255,255,255,0.4)' }}>
                       <span className="material-symbols-outlined text-sm" style={book.isFavorite ? { fontVariationSettings: "'FILL' 1" } : {}}>star</span>
                     </button>
                     <button onClick={() => onDelete(book.id)} className="size-8 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-red-400/60 hover:text-red-400">

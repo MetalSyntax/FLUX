@@ -8,7 +8,7 @@ const Privacy: React.FC = () => {
         <p className="text-xs opacity-40 font-medium">Last updated: June 2026</p>
       </div>
 
-      <div className="glass rounded-3xl p-6 border border-white/5 space-y-6 text-sm opacity-80 leading-relaxed">
+      <div className="glass rounded-3xl p-6 border border-ui-border space-y-6 text-sm opacity-80 leading-relaxed">
         <section>
           <h2 className="text-base font-bold text-primary mb-2">1. Data Collection</h2>
           <p>FLUX prioritizes your privacy. We do not collect, transmit, or store any personal data, reading habits, or library metadata on our servers. The app operates entirely offline by default after the initial load.</p>

@@ -8,7 +8,7 @@ const Terms: React.FC = () => {
         <p className="text-xs opacity-40 font-medium">Last updated: June 2026</p>
       </div>
 
-      <div className="glass rounded-3xl p-6 border border-white/5 space-y-6 text-sm opacity-80 leading-relaxed">
+      <div className="glass rounded-3xl p-6 border border-ui-border space-y-6 text-sm opacity-80 leading-relaxed">
         <section>
           <h2 className="text-base font-bold text-primary mb-2">1. Introduction</h2>
           <p>Welcome to FLUX. By using our application, you agree to these Terms and Conditions. Please read them carefully before using the app.</p>

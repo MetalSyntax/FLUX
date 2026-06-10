@@ -21,7 +21,7 @@ const App: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [settings, setSettings] = useState<UserSettings>({
     name: 'Reader',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Flux',
+    avatar: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Flux',
     theme: 'dark',
     dailyGoal: 10,
   });
@@ -30,6 +30,10 @@ const App: React.FC = () => {
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentView]);
 
   useEffect(() => {
     const init = async () => {
@@ -196,7 +200,7 @@ const App: React.FC = () => {
       {/* Basic header with back button for legal pages */}
       {(currentView === ViewType.TERMS || currentView === ViewType.PRIVACY) && (
         <div className="pt-12 pb-4 px-6 flex items-center gap-4">
-          <button onClick={() => setCurrentView(ViewType.PROFILE)} className="size-10 rounded-full glass flex items-center justify-center hover:bg-white/10 transition-colors">
+          <button onClick={() => setCurrentView(ViewType.PROFILE)} className="size-10 rounded-full glass flex items-center justify-center hover:bg-ui-bg-accented transition-colors">
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
           <h2 className="font-bold tracking-widest uppercase text-sm opacity-60">Back to Profile</h2>
@@ -271,7 +275,7 @@ const App: React.FC = () => {
       />
       {isUploading && (
         <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-white/10 p-8 rounded-3xl flex flex-col items-center gap-4 border border-white/20">
+          <div className="bg-ui-bg-accented p-8 rounded-3xl flex flex-col items-center gap-4 border border-ui-border">
             <div className="size-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
             <p className="text-white font-bold tracking-widest uppercase text-sm">Loading Book...</p>
           </div>
@@ -291,7 +295,7 @@ const App: React.FC = () => {
             <div className="flex gap-3">
               <button 
                 onClick={() => setUpdateAvailable(false)} 
-                className="flex-1 py-3 rounded-2xl bg-white/5 hover:bg-white/10 font-bold text-xs transition-colors"
+                className="flex-1 py-3 rounded-2xl bg-ui-bg-muted hover:bg-ui-bg-accented font-bold text-xs transition-colors"
               >
                 Cancel
               </button>
