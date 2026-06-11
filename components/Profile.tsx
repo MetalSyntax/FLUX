@@ -12,7 +12,7 @@ interface ProfileProps {
   onNavigate?: (view: string) => void;
 }
 
-const COLLECTION_COLORS = ['#00c08b', '#7c3aed', '#dc2626', '#16a34a', '#d97706', '#0891b2'];
+const COLLECTION_COLORS = ['var(--color-primary)', 'var(--color-purple)', 'var(--color-red)', 'var(--color-green)', 'var(--color-orange)', 'var(--color-cyan)'];
 
 function calculateStreak(sessions: ReadingSession[]): number {
   if (sessions.length === 0) return 0;
@@ -157,7 +157,7 @@ const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckU
               <circle cx="36" cy="36" r={r} fill="none" style={{ stroke: 'var(--ui-border)' }} strokeWidth="5" />
               <circle
                 cx="36" cy="36" r={r}
-                fill="none" stroke="#00c08b" strokeWidth="5"
+                fill="none" stroke="var(--color-primary)" strokeWidth="5"
                 strokeDasharray={circ}
                 strokeDashoffset={strokeDashoffset}
                 strokeLinecap="round"

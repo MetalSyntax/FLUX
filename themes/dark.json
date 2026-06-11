@@ -1,0 +1,16 @@
+{
+  "--bg-gradient": "linear-gradient(180deg, #001E26 0%, #00100b 100%)",
+  "--text-main": "#ffffff",
+  "--glass-bg": "rgba(255, 255, 255, 0.04)",
+  "--glass-border": "rgba(255, 255, 255, 0.08)",
+  "--glass-dark-bg": "rgba(0, 0, 0, 0.4)",
+  "--glass-dark-border": "rgba(255, 255, 255, 0.05)",
+  "--glass-premium-bg": "rgba(255, 255, 255, 0.03)",
+  "--glass-premium-border": "rgba(255, 255, 255, 0.1)",
+  "--ui-bg": "#0a0a0a",
+  "--ui-bg-muted": "#171717",
+  "--ui-bg-elevated": "#171717",
+  "--ui-bg-accented": "#262626",
+  "--ui-text-muted": "#a3a3a3",
+  "--ui-border": "rgba(255, 255, 255, 0.08)"
+}

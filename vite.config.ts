@@ -13,8 +13,8 @@ export default defineConfig({
         name: 'FLUX Reader',
         short_name: 'FLUX',
         description: 'Your premium reading experience',
-        theme_color: '#0b0e1a',
-        background_color: '#0b0e1a',
+        theme_color: '#000000',
+        background_color: '#000000',
         display: 'standalone',
         icons: [
           {

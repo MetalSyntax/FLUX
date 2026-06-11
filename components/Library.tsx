@@ -15,12 +15,12 @@ interface LibraryProps {
   settings: UserSettings;
 }
 
-const COLL_COLORS = ['#00c08b', '#7c3aed', '#dc2626', '#16a34a', '#d97706', '#0891b2'];
+const COLL_COLORS = ['var(--color-primary)', 'var(--color-purple)', 'var(--color-red)', 'var(--color-green)', 'var(--color-orange)', 'var(--color-cyan)'];
 
 const THEME_COLORS = {
-  dark:  { bg: '#171717', text: '#ffffff', glass: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.08)', placeholder: 'rgba(255,255,255,0.28)', icon: 'rgba(255,255,255,0.35)' },
-  black: { bg: '#0a0a0a', text: '#ffffff', glass: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.06)', placeholder: 'rgba(255,255,255,0.25)', icon: 'rgba(255,255,255,0.30)' },
-  white: { bg: '#f5f5f5',  text: '#0f172a', glass: 'rgba(15,23,42,0.06)',   border: 'rgba(0,0,0,0.10)',      placeholder: 'rgba(15,23,42,0.30)',   icon: 'rgba(15,23,42,0.35)'  },
+  dark:  { bg: 'var(--ui-bg-elevated)', text: 'var(--text-main)', glass: 'var(--glass-bg)', border: 'var(--ui-border)', placeholder: 'rgba(255,255,255,0.28)', icon: 'rgba(255,255,255,0.35)' },
+  black: { bg: 'var(--ui-bg-elevated)', text: 'var(--text-main)', glass: 'var(--glass-bg)', border: 'var(--ui-border)', placeholder: 'rgba(255,255,255,0.25)', icon: 'rgba(255,255,255,0.30)' },
+  white: { bg: 'var(--ui-bg-elevated)', text: 'var(--text-main)', glass: 'var(--glass-bg)', border: 'var(--ui-border)', placeholder: 'rgba(15,23,42,0.30)',   icon: 'rgba(15,23,42,0.35)'  },
 };
 
 const Library: React.FC<LibraryProps> = ({
@@ -175,7 +175,7 @@ const Library: React.FC<LibraryProps> = ({
           <div
             className="absolute top-full left-0 right-0 mt-2 rounded-2xl p-2 shadow-2xl animate-in fade-in slide-in-from-top-2 z-40"
             style={{
-              backgroundColor: settings.theme === 'white' ? '#f5f5f5' : '#171717',
+              backgroundColor: 'var(--ui-bg-elevated)',
               border: `1px solid ${ct.border}`,
               backdropFilter: 'blur(20px)',
             }}
@@ -354,7 +354,7 @@ const Library: React.FC<LibraryProps> = ({
                     <button
                       onClick={(e) => { e.stopPropagation(); onFavorite(book.id); }}
                       className="size-6 flex items-center justify-center rounded-lg bg-black/40 backdrop-blur-md"
-                      style={{ color: book.isFavorite ? '#f59e0b' : 'rgba(255,255,255,0.5)' }}
+                      style={{ color: book.isFavorite ? 'var(--color-favorite)' : 'rgba(255,255,255,0.5)' }}
                     >
                       <span className="material-symbols-outlined text-sm" style={book.isFavorite ? { fontVariationSettings: "'FILL' 1" } : {}}>star</span>
                     </button>
@@ -422,7 +422,7 @@ const Library: React.FC<LibraryProps> = ({
                     </div>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    <button onClick={() => onFavorite(book.id)} className="size-8 flex items-center justify-center rounded-xl hover:bg-ui-bg-accented" style={{ color: book.isFavorite ? '#f59e0b' : 'rgba(255,255,255,0.4)' }}>
+                    <button onClick={() => onFavorite(book.id)} className="size-8 flex items-center justify-center rounded-xl hover:bg-ui-bg-accented" style={{ color: book.isFavorite ? 'var(--color-favorite)' : 'rgba(255,255,255,0.4)' }}>
                       <span className="material-symbols-outlined text-sm" style={book.isFavorite ? { fontVariationSettings: "'FILL' 1" } : {}}>star</span>
                     </button>
                     <button onClick={() => onDelete(book.id)} className="size-8 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-red-400/60 hover:text-red-400">

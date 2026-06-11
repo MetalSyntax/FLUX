@@ -21,11 +21,11 @@ const Stats: React.FC<StatsProps> = ({ library, settings }) => {
     setTotalPagesRead(pages);
   }, [library]);
 
-  const StatCard = ({ title, value, icon, color }: { title: string, value: string | number, icon: string, color: string }) => (
+  const StatCard = ({ title, value, icon, colorName }: { title: string, value: string | number, icon: string, colorName: string }) => (
     <div className="glass rounded-3xl p-5 border border-ui-border relative overflow-hidden group hover:border-primary/30 transition-all">
-      <div className="absolute -right-4 -top-4 size-20 rounded-full opacity-10 transition-transform group-hover:scale-150" style={{ backgroundColor: color }} />
-      <div className="size-10 rounded-xl mb-4 flex items-center justify-center shadow-lg" style={{ backgroundColor: `${color}22` }}>
-        <span className="material-symbols-outlined text-xl" style={{ color }}>{icon}</span>
+      <div className="absolute -right-4 -top-4 size-20 rounded-full opacity-10 transition-transform group-hover:scale-150" style={{ backgroundColor: `var(--color-${colorName})` }} />
+      <div className="size-10 rounded-xl mb-4 flex items-center justify-center shadow-lg" style={{ backgroundColor: `rgba(var(--color-${colorName}-rgb), 0.13)` }}>
+        <span className="material-symbols-outlined text-xl" style={{ color: `var(--color-${colorName})` }}>{icon}</span>
       </div>
       <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest mb-1">{title}</p>
       <p className="text-3xl font-black">{value}</p>
@@ -40,10 +40,10 @@ const Stats: React.FC<StatsProps> = ({ library, settings }) => {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <StatCard title="Books in Library" value={totalBooks} icon="library_books" color="#00c08b" />
-        <StatCard title="Completed" value={completedBooks} icon="task_alt" color="#16a34a" />
-        <StatCard title="Pages Read" value={totalPagesRead} icon="menu_book" color="#7c3aed" />
-        <StatCard title="Favorites" value={favoriteBooks} icon="favorite" color="#dc2626" />
+        <StatCard title="Books in Library" value={totalBooks} icon="library_books" colorName="primary" />
+        <StatCard title="Completed" value={completedBooks} icon="task_alt" colorName="green" />
+        <StatCard title="Pages Read" value={totalPagesRead} icon="menu_book" colorName="purple" />
+        <StatCard title="Favorites" value={favoriteBooks} icon="favorite" colorName="red" />
       </div>
 
       <div className="glass rounded-3xl p-6 border border-ui-border mt-6 relative overflow-hidden">

@@ -43,7 +43,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate, onAddClic
           <button
             onClick={onAddClick}
             className="size-16 rounded-full bg-primary flex items-center justify-center shadow-xl shadow-primary/40 active:scale-90 transition-all border-[6px] hover:brightness-110"
-            style={{ borderColor: 'var(--ui-bg)', background: '#00c08b' }}
+            style={{ borderColor: 'var(--ui-bg)', background: 'var(--color-primary)' }}
           >
             <span className="material-symbols-outlined text-3xl font-bold text-white">add</span>
           </button>

@@ -22,7 +22,7 @@ interface ReaderViewProps {
   onProgressUpdate: (bookId: string, page: number, total?: number, cover?: string, cfi?: string) => void;
 }
 
-const BOOKMARK_COLORS = ['#00c08b', '#7c3aed', '#dc2626', '#16a34a', '#f59e0b'];
+const BOOKMARK_COLORS = ['var(--color-primary)', 'var(--color-purple)', 'var(--color-red)', 'var(--color-green)', 'var(--color-favorite)'];
 
 const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProgressUpdate }) => {
   const [currentPage, setCurrentPage] = useState(book.currentPage || 1);
@@ -71,9 +71,9 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
   useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
 
   const themeColors = {
-    dark: { bg: '#0a0a0a', text: '#ffffff', glass: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)' },
-    black: { bg: '#000000', text: '#ffffff', glass: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.08)' },
-    white: { bg: '#ffffff', text: '#0f172a', glass: 'rgba(15,23,42,0.05)', border: 'rgba(15,23,42,0.1)' },
+    dark: { bg: 'var(--ui-bg)', text: 'var(--text-main)', glass: 'var(--glass-bg)', border: 'var(--ui-border)' },
+    black: { bg: 'var(--ui-bg)', text: 'var(--text-main)', glass: 'var(--glass-bg)', border: 'var(--ui-border)' },
+    white: { bg: 'var(--ui-bg)', text: 'var(--text-main)', glass: 'var(--glass-bg)', border: 'var(--ui-border)' },
   };
   const ct = themeColors[settings.theme] || themeColors.dark;
 
@@ -617,7 +617,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
               onClick={addBookmark}
               className="size-10 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all active:scale-90 border"
               style={isBookmarkedOnCurrentPage
-                ? { backgroundColor: '#00c08b22', borderColor: '#00c08b66', color: '#00c08b' }
+                ? { backgroundColor: 'rgba(0, 192, 139, 0.15)', borderColor: 'rgba(0, 192, 139, 0.4)', color: 'var(--color-primary)' }
                 : { backgroundColor: ct.glass, borderColor: ct.border }
               }
             >
@@ -654,7 +654,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
         {/* Bookmarks Panel */}
         <div
           className={`absolute top-full right-4 sm:right-6 mt-4 w-72 rounded-3xl p-5 space-y-4 shadow-2xl transition-all duration-500 transform border z-[130] ${showBookmarks && showControls ? 'translate-y-0 opacity-100' : '-translate-y-10 opacity-0 pointer-events-none'}`}
-          style={{ backgroundColor: settings.theme === 'white' ? '#f5f5f5' : '#171717', borderColor: ct.border }}
+          style={{ backgroundColor: 'var(--ui-bg-elevated)', borderColor: ct.border }}
         >
           <div className="flex items-center justify-between">
             <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Bookmarks</p>
@@ -685,7 +685,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
         {/* Settings Panel */}
         <div
           className={`absolute top-full right-4 sm:right-6 mt-4 w-72 rounded-3xl p-6 space-y-6 shadow-2xl transition-all duration-500 transform border z-[130] ${showSettings && showControls && !showBookmarks ? 'translate-y-0 opacity-100' : '-translate-y-10 opacity-0 pointer-events-none'}`}
-          style={{ backgroundColor: settings.theme === 'white' ? '#f5f5f5' : '#171717', borderColor: ct.border }}
+          style={{ backgroundColor: 'var(--ui-bg-elevated)', borderColor: ct.border }}
         >
           {/* Brightness */}
           <div className="space-y-3">
@@ -708,9 +708,23 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
                 <span className="text-xs font-bold text-primary">{Math.round(zoom * 100)}%</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-lg opacity-20">zoom_out</span>
+                <button
+                  type="button"
+                  onClick={() => setZoom(prev => Math.max(0.8, Math.round((prev - 0.1) * 10) / 10))}
+                  className="size-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10 text-primary active:scale-90"
+                  title="Zoom Out"
+                >
+                  <span className="material-symbols-outlined text-lg">zoom_out</span>
+                </button>
                 <input type="range" min="0.8" max="2.5" step="0.1" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} className="flex-1 accent-primary cursor-pointer" />
-                <span className="material-symbols-outlined text-lg opacity-20">zoom_in</span>
+                <button
+                  type="button"
+                  onClick={() => setZoom(prev => Math.min(2.5, Math.round((prev + 0.1) * 10) / 10))}
+                  className="size-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10 text-primary active:scale-90"
+                  title="Zoom In"
+                >
+                  <span className="material-symbols-outlined text-lg">zoom_in</span>
+                </button>
               </div>
             </div>
           )}
@@ -723,9 +737,23 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
                 <span className="text-xs font-bold text-primary">{fontSize}%</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs font-bold opacity-20">A</span>
+                <button
+                  type="button"
+                  onClick={() => setFontSize(prev => Math.max(60, prev - 10))}
+                  className="size-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10 text-primary font-bold text-xs active:scale-90"
+                  title="Decrease Size"
+                >
+                  A-
+                </button>
                 <input type="range" min="60" max="200" step="10" value={fontSize} onChange={(e) => setFontSize(parseInt(e.target.value))} className="flex-1 accent-primary cursor-pointer" />
-                <span className="text-xl font-bold opacity-20">A</span>
+                <button
+                  type="button"
+                  onClick={() => setFontSize(prev => Math.min(200, prev + 10))}
+                  className="size-8 rounded-lg flex items-center justify-center transition-all hover:bg-white/10 text-primary font-bold text-base active:scale-90"
+                  title="Increase Size"
+                >
+                  A+
+                </button>
               </div>
             </div>
           )}
@@ -776,7 +804,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
                 <span className="material-symbols-outlined text-base">chevron_left</span> Prev
               </button>
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-[10px] font-bold px-3 py-1 rounded-full border shadow-lg" style={{ backgroundColor: 'rgba(0,192,139,0.15)', borderColor: 'rgba(0,192,139,0.3)', color: '#00c08b' }}>
+                <span className="text-[10px] font-bold px-3 py-1 rounded-full border shadow-lg" style={{ backgroundColor: 'rgba(0, 192, 139, 0.15)', borderColor: 'rgba(0, 192, 139, 0.3)', color: 'var(--color-primary)' }}>
                   {currentPage} <span className="opacity-40 mx-1">/</span> {totalPages}
                 </span>
                 {totalPages > 0 && <span className="text-[8px] opacity-30 font-bold uppercase tracking-widest">{Math.round((currentPage / totalPages) * 100)}%</span>}
@@ -799,6 +827,40 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
               />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Floating Zoom In / Zoom Out Overlay Controls */}
+      {showControls && !loading && !error && (
+        <div className="fixed right-6 top-1/2 -translate-y-1/2 z-[115] flex flex-col gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
+          <button
+            onClick={() => {
+              if (book.type === BookType.EPUB) {
+                setFontSize(prev => Math.min(200, prev + 10));
+              } else {
+                setZoom(prev => Math.min(2.5, Math.round((prev + 0.1) * 10) / 10));
+              }
+            }}
+            className="size-12 rounded-2xl border flex items-center justify-center text-primary active:scale-90 transition-all shadow-2xl hover:bg-white/10"
+            style={{ backgroundColor: ct.bg, borderColor: ct.border, backdropFilter: 'blur(12px)' }}
+            title="Zoom In"
+          >
+            <span className="material-symbols-outlined text-2xl">zoom_in</span>
+          </button>
+          <button
+            onClick={() => {
+              if (book.type === BookType.EPUB) {
+                setFontSize(prev => Math.max(60, prev - 10));
+              } else {
+                setZoom(prev => Math.max(0.8, Math.round((prev - 0.1) * 10) / 10));
+              }
+            }}
+            className="size-12 rounded-2xl border flex items-center justify-center text-primary active:scale-90 transition-all shadow-2xl hover:bg-white/10"
+            style={{ backgroundColor: ct.bg, borderColor: ct.border, backdropFilter: 'blur(12px)' }}
+            title="Zoom Out"
+          >
+            <span className="material-symbols-outlined text-2xl">zoom_out</span>
+          </button>
         </div>
       )}
 

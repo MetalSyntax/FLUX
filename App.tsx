@@ -11,6 +11,7 @@ import TopNav from './components/TopNav';
 import Terms from './components/Terms';
 import Privacy from './components/Privacy';
 import * as db from './db';
+import { applyTheme as setAppTheme } from './themes/themeHelper';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>(ViewType.HOME);
@@ -88,11 +89,7 @@ const App: React.FC = () => {
   };
 
   const applyTheme = (theme: string) => {
-    const root = document.documentElement;
-    root.classList.remove('theme-white', 'theme-black', 'dark');
-    if (theme === 'white') root.classList.add('theme-white');
-    else if (theme === 'black') root.classList.add('theme-black');
-    else root.classList.add('dark');
+    setAppTheme(theme);
   };
 
   // Open book: load file from IndexedDB if not in memory

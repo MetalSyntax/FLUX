@@ -376,10 +376,10 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
           <h2 className="text-lg font-bold mb-4">Browse by Genre</h2>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: 'Adventure', icon: 'explore', color: '#00c08b' },
-              { label: 'Romance', icon: 'favorite', color: '#dc2626' },
-              { label: 'Mystery', icon: 'search', color: '#7c3aed' },
-              { label: 'Science', icon: 'science', color: '#16a34a' },
+              { label: 'Adventure', icon: 'explore', color: 'var(--color-primary)' },
+              { label: 'Romance', icon: 'favorite', color: 'var(--color-red)' },
+              { label: 'Mystery', icon: 'search', color: 'var(--color-purple)' },
+              { label: 'Science', icon: 'science', color: 'var(--color-green)' },
             ].map((g) => (
               <button
                 key={g.label}

@@ -19,6 +19,23 @@
     --ui-bg-accented: #262626;
     --ui-text-muted: #a3a3a3;
     --ui-border: rgba(255, 255, 255, 0.08);
+
+    /* Semantic and Palette Colors */
+    --color-primary: #00c08b;
+    --color-favorite: #f59e0b;
+    --color-purple: #7c3aed;
+    --color-red: #dc2626;
+    --color-green: #16a34a;
+    --color-orange: #d97706;
+    --color-cyan: #0891b2;
+
+    --color-primary-rgb: 0, 192, 139;
+    --color-favorite-rgb: 245, 158, 11;
+    --color-purple-rgb: 124, 58, 237;
+    --color-red-rgb: 220, 38, 38;
+    --color-green-rgb: 22, 163, 74;
+    --color-orange-rgb: 217, 119, 6;
+    --color-cyan-rgb: 8, 145, 178;
   }
 
   html.theme-black {
@@ -48,6 +65,19 @@
     --ui-bg-accented: #e5e5e5;
     --ui-text-muted: #4b5563;
     --ui-border: rgba(0, 0, 0, 0.1);
+  }
+
+  html, body {
+    overscroll-behavior-y: contain;
+    overscroll-behavior-x: none;
+    touch-action: pan-x pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input, textarea, [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
   }
 
   body {
