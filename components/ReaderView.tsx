@@ -211,7 +211,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
             const zip = await JSZip.loadAsync(arrayBuffer);
             const promises: Promise<void>[] = [];
             zip.forEach((path, file) => {
-              if (path.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
+              if (path.match(/\.(jpg|jpeg|png|webp|gif|avif)$/i)) {
                 promises.push((async () => {
                   const blob = await file.async('blob');
                   images.push({ name: path, url: URL.createObjectURL(blob) });
@@ -225,7 +225,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
             const extractor = await createExtractorFromData({ data: arrayBuffer, wasmBinary });
             
             const list = extractor.getFileList();
-            const fileHeaders = [...list.fileHeaders].filter((f: any) => !f.flags.directory && f.name.match(/\.(jpg|jpeg|png|webp|gif)$/i));
+            const fileHeaders = [...list.fileHeaders].filter((f: any) => !f.flags.directory && f.name.match(/\.(jpg|jpeg|png|webp|gif|avif)$/i));
             
             const extracted = extractor.extract({ files: fileHeaders.map((f: any) => f.name) });
             const extractedFiles = [...extracted.files];

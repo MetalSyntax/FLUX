@@ -135,7 +135,7 @@ const App: React.FC = () => {
     setIsUploading(true);
     const ext = file.name.split('.').pop()?.toUpperCase();
     let type = BookType.PDF;
-    if (ext === 'CBR' || ext === 'CBZ') type = BookType.CBR;
+    if (ext === 'CBR' || ext === 'CBZ' || ext === 'ZIP') type = BookType.CBR;
     if (ext === 'EPUB') type = BookType.EPUB;
 
     const newBook: Book = {
@@ -267,7 +267,7 @@ const App: React.FC = () => {
         type="file"
         ref={fileInputRef}
         className="hidden"
-        accept=".pdf,.epub,.cbr,.cbz"
+        accept=".pdf,.epub,.cbr,.cbz,.zip"
         onChange={handleFileUpload}
       />
       {isUploading && (
