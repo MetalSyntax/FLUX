@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Book, UserSettings } from '../types';
+import { getTranslation } from '../translations';
 
 interface StatsProps {
   library: Book[];
@@ -7,6 +8,8 @@ interface StatsProps {
 }
 
 const Stats: React.FC<StatsProps> = ({ library, settings }) => {
+  const t = getTranslation(settings.language || 'en');
+
   const [totalBooks, setTotalBooks] = useState(0);
   const [completedBooks, setCompletedBooks] = useState(0);
   const [totalPagesRead, setTotalPagesRead] = useState(0);
@@ -35,28 +38,38 @@ const Stats: React.FC<StatsProps> = ({ library, settings }) => {
   return (
     <div className="px-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       <div className="mb-8">
-        <h1 className="text-2xl font-black tracking-tight mb-2">Reading Stats</h1>
-        <p className="text-xs opacity-40 font-medium">Track your reading progress over time.</p>
+        <h1 className="text-2xl font-black tracking-tight mb-2">{t.statsTitle}</h1>
+        <p className="text-xs opacity-40 font-medium">
+          {settings.language === 'es' ? 'Sigue tu progreso de lectura a lo largo del tiempo.' : settings.language === 'pt' ? 'Acompanhe seu progresso de leitura ao longo do tempo.' : 'Track your reading progress over time.'}
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <StatCard title="Books in Library" value={totalBooks} icon="library_books" colorName="primary" />
-        <StatCard title="Completed" value={completedBooks} icon="task_alt" colorName="green" />
-        <StatCard title="Pages Read" value={totalPagesRead} icon="menu_book" colorName="purple" />
-        <StatCard title="Favorites" value={favoriteBooks} icon="favorite" colorName="red" />
+        <StatCard title={t.library} value={totalBooks} icon="library_books" colorName="primary" />
+        <StatCard title={t.completed} value={completedBooks} icon="task_alt" colorName="green" />
+        <StatCard title={t.pagesRead} value={totalPagesRead} icon="menu_book" colorName="purple" />
+        <StatCard title={t.filterFavorites} value={favoriteBooks} icon="favorite" colorName="red" />
       </div>
 
       <div className="glass rounded-3xl p-6 border border-ui-border mt-6 relative overflow-hidden">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest mb-1">Daily Goal</p>
-            <p className="text-xl font-bold">{settings.dailyGoal} Pages / Day</p>
+            <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest mb-1">{t.dailyGoal}</p>
+            <p className="text-xl font-bold">
+              {settings.dailyGoal} {settings.language === 'es' ? 'Páginas / Día' : settings.language === 'pt' ? 'Páginas / Dia' : 'Pages / Day'}
+            </p>
           </div>
           <div className="size-14 rounded-full border-4 border-primary/20 flex items-center justify-center">
             <span className="material-symbols-outlined text-primary">local_fire_department</span>
           </div>
         </div>
-        <p className="text-xs opacity-50">Keep reading every day to build your streak and reach your goals!</p>
+        <p className="text-xs opacity-50">
+          {settings.language === 'es' 
+            ? '¡Sigue leyendo todos los días para crear una racha y alcanzar tus metas!' 
+            : settings.language === 'pt' 
+            ? 'Continue lendo todos os dias para construir sua racha e alcançar seus objetivos!' 
+            : 'Keep reading every day to build your streak and reach your goals!'}
+        </p>
       </div>
     </div>
   );

@@ -161,3 +161,25 @@ export const deleteCollection = async (id: string) => {
   const tx = db.transaction('collections', 'readwrite');
   tx.objectStore('collections').delete(id);
 };
+
+export const getFileSizes = async (): Promise<{ [bookId: string]: number }> => {
+  const db = await openDB();
+  return new Promise((resolve) => {
+    const tx = db.transaction('files', 'readonly');
+    const store = tx.objectStore('files');
+    const request = store.openCursor();
+    const sizes: { [bookId: string]: number } = {};
+    request.onsuccess = (e: any) => {
+      const cursor = e.target.result;
+      if (cursor) {
+        const value = cursor.value;
+        if (value && value.buffer) {
+          sizes[cursor.key] = value.buffer.byteLength;
+        }
+        cursor.continue();
+      } else {
+        resolve(sizes);
+      }
+    };
+  });
+};

@@ -20,6 +20,8 @@ export interface UserSettings {
   avatar: string;
   theme: 'dark' | 'black' | 'white';
   dailyGoal: number;
+  language?: 'en' | 'es' | 'pt';
+  showNsfw?: boolean;
 }
 
 export interface Book {

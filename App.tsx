@@ -12,6 +12,7 @@ import Terms from './components/Terms';
 import Privacy from './components/Privacy';
 import * as db from './db';
 import { applyTheme as setAppTheme } from './themes/themeHelper';
+import { getTranslation } from './translations';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>(ViewType.HOME);
@@ -25,10 +26,24 @@ const App: React.FC = () => {
     avatar: 'https://api.dicebear.com/7.x/lorelei/svg?seed=Flux',
     theme: 'dark',
     dailyGoal: 10,
+    language: 'en',
+    showNsfw: false,
   });
 
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ message, type });
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,7 +57,7 @@ const App: React.FC = () => {
       setLibrary(savedBooks);
       const savedSettings = await db.getSettings();
       if (savedSettings) {
-        setSettings({ dailyGoal: 10, ...savedSettings });
+        setSettings({ dailyGoal: 10, language: 'en', showNsfw: false, ...savedSettings });
         applyTheme(savedSettings.theme);
       }
     };
@@ -52,6 +67,7 @@ const App: React.FC = () => {
 
   const checkForUpdates = async (manual = false) => {
     if (manual) setIsCheckingUpdate(true);
+    const t = getTranslation(settings.language || 'en');
     try {
       const res = await fetch('https://api.github.com/repos/MetalSyntax/FLUX/commits/main');
       const data = await res.json();
@@ -61,14 +77,14 @@ const App: React.FC = () => {
       
       if (!currentSha) {
         localStorage.setItem('flux_version_sha', latestSha);
-        if (manual) alert('You are already on the latest version!');
+        if (manual) showToast(t.latestVersionMsg, 'success');
       } else if (currentSha !== latestSha) {
         setUpdateAvailable(true);
       } else {
-        if (manual) alert('You are already on the latest version!');
+        if (manual) showToast(t.latestVersionMsg, 'success');
       }
     } catch {
-      if (manual) alert('Could not check for updates. Try again later.');
+      if (manual) showToast(t.updateErrorMsg, 'error');
     } finally {
       if (manual) setIsCheckingUpdate(false);
     }
@@ -188,6 +204,35 @@ const App: React.FC = () => {
     );
   };
 
+  const handleToggleNsfw = async (id: string) => {
+    setLibrary((prev) =>
+      prev.map((b) => {
+        if (b.id !== id) return b;
+        const tags = b.tags || [];
+        const newTags = tags.includes('NSFW')
+          ? tags.filter((t) => t !== 'NSFW')
+          : [...tags, 'NSFW'];
+        const updated = { ...b, tags: newTags };
+        db.saveBook(updated);
+        return updated;
+      })
+    );
+  };
+
+  const handleRenameBook = async (id: string, newTitle: string) => {
+    if (!newTitle.trim()) return;
+    setLibrary((prev) =>
+      prev.map((b) => {
+        if (b.id !== id) return b;
+        const updated = { ...b, title: newTitle.trim() };
+        db.saveBook(updated);
+        return updated;
+      })
+    );
+  };
+
+  const t = getTranslation(settings.language || 'en');
+
   return (
     <div className="min-h-screen relative flex flex-col overflow-x-hidden transition-colors duration-300">
       {currentView !== ViewType.READER && currentView !== ViewType.TERMS && currentView !== ViewType.PRIVACY && (
@@ -200,7 +245,9 @@ const App: React.FC = () => {
           <button onClick={() => setCurrentView(ViewType.PROFILE)} className="size-10 rounded-full glass flex items-center justify-center hover:bg-ui-bg-accented transition-colors">
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
-          <h2 className="font-bold tracking-widest uppercase text-sm opacity-60">Back to Profile</h2>
+          <h2 className="font-bold tracking-widest uppercase text-sm opacity-60">
+            {settings.language === 'es' ? 'Volver al Perfil' : settings.language === 'pt' ? 'Voltar ao Perfil' : 'Back to Profile'}
+          </h2>
         </div>
       )}
 
@@ -215,6 +262,8 @@ const App: React.FC = () => {
             setActiveFilter={setActiveFilter}
             onDelete={handleDelete}
             onFavorite={handleFavorite}
+            onToggleNsfw={handleToggleNsfw}
+            onRenameBook={handleRenameBook}
             settings={settings}
           />
         )}
@@ -224,6 +273,7 @@ const App: React.FC = () => {
             library={library}
             onOpenBook={handleOpenBook}
             onAddBook={handleAddFromDiscover}
+            settings={settings}
           />
         )}
 
@@ -235,11 +285,12 @@ const App: React.FC = () => {
             onCheckUpdate={() => checkForUpdates(true)}
             isCheckingUpdate={isCheckingUpdate}
             onNavigate={(view: string) => setCurrentView(view as ViewType)}
+            onDeleteBook={handleDelete}
           />
         )}
 
-        {currentView === ViewType.TERMS && <Terms />}
-        {currentView === ViewType.PRIVACY && <Privacy />}
+        {currentView === ViewType.TERMS && <Terms settings={settings} />}
+        {currentView === ViewType.PRIVACY && <Privacy settings={settings} />}
 
         {currentView === ViewType.STATS && (
           <Stats library={library} settings={settings} />
@@ -260,6 +311,7 @@ const App: React.FC = () => {
           activeView={currentView}
           onNavigate={setCurrentView}
           onAddClick={() => fileInputRef.current?.click()}
+          settings={settings}
         />
       )}
 
@@ -274,7 +326,9 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-ui-bg-accented p-8 rounded-3xl flex flex-col items-center gap-4 border border-ui-border">
             <div className="size-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-            <p className="text-white font-bold tracking-widest uppercase text-sm">Loading Book...</p>
+            <p className="text-white font-bold tracking-widest uppercase text-sm">
+              {settings.language === 'es' ? 'Cargando libro...' : settings.language === 'pt' ? 'Carregando livro...' : 'Loading Book...'}
+            </p>
           </div>
         </div>
       )}
@@ -287,22 +341,45 @@ const App: React.FC = () => {
             <div className="size-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4 text-primary">
               <span className="material-symbols-outlined text-3xl">update</span>
             </div>
-            <h3 className="text-xl font-bold mb-2">Update Available</h3>
-            <p className="text-xs opacity-60 mb-6">A new version of FLUX has been pushed to GitHub. Would you like to update the app now?</p>
+            <h3 className="text-xl font-bold mb-2">
+              {settings.language === 'es' ? 'Actualización Disponible' : settings.language === 'pt' ? 'Atualização Disponível' : 'Update Available'}
+            </h3>
+            <p className="text-xs opacity-60 mb-6">
+              {settings.language === 'es' 
+                ? 'Una nueva versión de FLUX ha sido subida a GitHub. ¿Deseas actualizar la aplicación ahora?' 
+                : settings.language === 'pt' 
+                ? 'Uma nova versão do FLUX foi enviada para o GitHub. Deseja atualizar o aplicativo agora?' 
+                : 'A new version of FLUX has been pushed to GitHub. Would you like to update the app now?'}
+            </p>
             <div className="flex gap-3">
               <button 
                 onClick={() => setUpdateAvailable(false)} 
                 className="flex-1 py-3 rounded-2xl bg-ui-bg-muted hover:bg-ui-bg-accented font-bold text-xs transition-colors"
               >
-                Cancel
+                {settings.language === 'es' ? 'Cancelar' : settings.language === 'pt' ? 'Cancelar' : 'Cancel'}
               </button>
               <button 
                 onClick={handleUpdateAccept} 
                 className="flex-1 py-3 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-xs shadow-lg transition-colors"
               >
-                Update Now
+                {settings.language === 'es' ? 'Actualizar Ahora' : settings.language === 'pt' ? 'Atualizar Agora' : 'Update Now'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast popup */}
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[999] animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="px-5 py-3 rounded-2xl glass-premium flex items-center gap-3 border border-ui-border shadow-2xl">
+            <span className="material-symbols-outlined text-primary text-xl">
+              {toast.type === 'success' ? 'check_circle' : toast.type === 'error' ? 'error' : 'info'}
+            </span>
+            <span className="text-xs font-bold tracking-wide text-white">{toast.message}</span>
+            <button onClick={() => setToast(null)} className="opacity-40 hover:opacity-100 transition-opacity">
+              <span className="material-symbols-outlined text-xs text-white">close</span>
+            </button>
           </div>
         </div>
       )}

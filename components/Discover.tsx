@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { Book, BookType } from '../types';
+import { Book, BookType, UserSettings } from '../types';
+import { getTranslation } from '../translations';
 
 interface GBook {
   id: number;
@@ -16,6 +15,7 @@ interface DiscoverProps {
   library: Book[];
   onOpenBook: (book: Book) => void;
   onAddBook: (file: File) => void;
+  settings: UserSettings;
 }
 
 const formatAuthor = (name: string) =>
@@ -28,7 +28,9 @@ const getCover = (book: GBook) =>
 const getEpubUrl = (book: GBook) =>
   book.formats['application/epub+zip'] || book.formats['application/epub'];
 
-const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) => {
+const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook, settings }) => {
+  const t = getTranslation(settings.language || 'en');
+
   const [featured, setFeatured] = useState<GBook[]>([]);
   const [popular, setPopular] = useState<GBook[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,8 +47,6 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
     setToast(msg);
     setTimeout(() => setToast(null), 3500);
   };
-  
-  // No in-app browser state because X-Frame-Options prevents it
 
   useEffect(() => {
     const load = async () => {
@@ -58,7 +58,6 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
             setFeatured(f);
             setPopular(p);
             setLoading(false);
-            // Don't return, we can still fetch in background to refresh cache silently
           }
         } catch {}
       }
@@ -95,7 +94,7 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
       const file = new File([blob], `${gbook.title}.epub`, { type: 'application/epub+zip' });
       onAddBook(file);
     } catch {
-      showToast("Iniciando descarga externa. Añade el archivo manualmente.");
+      showToast(settings.language === 'es' ? 'Descarga fallida. Abriendo link externo.' : settings.language === 'pt' ? 'Download falhou. Abrindo link externo.' : 'Download failed. Opening external link.');
       window.open(epubUrl, '_blank');
     } finally {
       setDownloading(null);
@@ -148,14 +147,20 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
     executeSearch(searchQuery);
   };
 
-  const inLibrary = (id: number) =>
-    library.some((b) => b.title.toLowerCase().includes(String(id)));
-
   const lastRead = [...library].sort((a, b) => b.lastReadDate - a.lastReadDate)[0];
 
   const Skeleton = () => (
     <div className="flex-none w-[85vw] aspect-[4/5] rounded-3xl bg-ui-bg-muted animate-pulse snap-center" />
   );
+
+  // Translate genre labels dynamically
+  const getGenreLabel = (genre: string) => {
+    if (genre === 'Adventure') return settings.language === 'es' || settings.language === 'pt' ? 'Aventura' : 'Adventure';
+    if (genre === 'Romance') return 'Romance';
+    if (genre === 'Mystery') return settings.language === 'es' ? 'Misterio' : settings.language === 'pt' ? 'Mistério' : 'Mystery';
+    if (genre === 'Science') return settings.language === 'es' ? 'Ciencia' : settings.language === 'pt' ? 'Ciência' : 'Science';
+    return genre;
+  };
 
   return (
     <div className="space-y-8 pb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -173,7 +178,7 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
             <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-xl opacity-40 pointer-events-none">search</span>
             <input
               type="text"
-              placeholder="Search books & authors..."
+              placeholder={t.searchDiscover}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-14 rounded-3xl pl-12 pr-4 text-sm outline-none transition-all bg-ui-bg-muted border border-ui-border focus:border-primary/50 focus:bg-ui-bg-accented"
@@ -184,7 +189,7 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
             disabled={isSearching || !searchQuery.trim()}
             className="h-14 px-5 rounded-3xl bg-primary text-white font-bold text-xs uppercase tracking-widest disabled:opacity-50 transition-all hover:bg-primary/90 flex items-center gap-2"
           >
-            {isSearching ? <div className="size-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : 'Search'}
+            {isSearching ? <div className="size-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : (settings.language === 'es' ? 'Buscar' : settings.language === 'pt' ? 'Buscar' : 'Search')}
           </button>
         </form>
         {searchQuery.trim() && (
@@ -209,8 +214,12 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
       {hasSearched && (
         <section className="px-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold tracking-tight">Search Results</h2>
-            <button onClick={() => { setHasSearched(false); setSearchQuery(''); }} className="text-xs font-bold opacity-40 uppercase tracking-widest hover:text-primary transition-colors">Clear</button>
+            <h2 className="text-xl font-bold tracking-tight">
+              {settings.language === 'es' ? 'Resultados de Búsqueda' : settings.language === 'pt' ? 'Resultados da Busca' : 'Search Results'}
+            </h2>
+            <button onClick={() => { setHasSearched(false); setSearchQuery(''); }} className="text-xs font-bold opacity-40 uppercase tracking-widest hover:text-primary transition-colors">
+              {settings.language === 'es' ? 'Limpiar' : settings.language === 'pt' ? 'Limpar' : 'Clear'}
+            </button>
           </div>
           {isSearching ? (
              <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-4">
@@ -219,7 +228,9 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
           ) : searchResults.length === 0 ? (
             <div className="glass rounded-2xl p-6 text-center opacity-40 border border-ui-border">
               <span className="material-symbols-outlined text-3xl mb-2">search_off</span>
-              <p className="text-xs font-medium">No results found on Project Gutenberg.</p>
+              <p className="text-xs font-medium">
+                {settings.language === 'es' ? 'No se encontraron resultados en Project Gutenberg.' : settings.language === 'pt' ? 'Nenhum resultado encontrado no Project Gutenberg.' : 'No results found on Project Gutenberg.'}
+              </p>
             </div>
           ) : (
             <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 pb-4">
@@ -271,12 +282,16 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
               }
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mb-1">Continue Reading</p>
+              <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mb-1">
+                {settings.language === 'es' ? 'Continuar Leyendo' : settings.language === 'pt' ? 'Continuar Lendo' : 'Continue Reading'}
+              </p>
               <p className="text-sm font-bold leading-tight truncate group-hover:text-primary transition-colors">{lastRead.title}</p>
               <div className="w-full h-1 bg-ui-bg-accented rounded-full mt-2 overflow-hidden">
                 <div className="h-full bg-primary" style={{ width: `${lastRead.progress}%` }} />
               </div>
-              <p className="text-[9px] opacity-30 mt-1">{lastRead.progress}% complete</p>
+              <p className="text-[9px] opacity-30 mt-1">
+                {lastRead.progress}% {settings.language === 'es' ? 'completado' : settings.language === 'pt' ? 'concluído' : 'complete'}
+              </p>
             </div>
             <span className="material-symbols-outlined text-4xl text-primary shrink-0">play_circle</span>
           </div>
@@ -286,14 +301,18 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
       {/* Featured */}
       <section className="px-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold tracking-tight">Featured</h2>
+          <h2 className="text-xl font-bold tracking-tight">
+            {settings.language === 'es' ? 'Recomendados' : settings.language === 'pt' ? 'Recomendados' : 'Featured'}
+          </h2>
           <span className="text-[10px] opacity-30 uppercase tracking-widest">Project Gutenberg</span>
         </div>
 
         {error ? (
           <div className="glass rounded-2xl p-6 text-center opacity-40">
             <span className="material-symbols-outlined text-3xl mb-2">wifi_off</span>
-            <p className="text-xs">Could not load books. Check your connection.</p>
+            <p className="text-xs">
+              {settings.language === 'es' ? 'No se pudieron cargar los libros. Comprueba tu conexión.' : settings.language === 'pt' ? 'Não foi possível carregar os livros. Verifique sua conexão.' : 'Could not load books. Check your connection.'}
+            </p>
           </div>
         ) : (
           <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4">
@@ -335,7 +354,9 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
       {/* Popular */}
       <section className="px-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold">Most Downloaded</h2>
+          <h2 className="text-lg font-bold">
+            {settings.language === 'es' ? 'Más Descargados' : settings.language === 'pt' ? 'Mais Baixados' : 'Most Downloaded'}
+          </h2>
         </div>
         <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
           {loading
@@ -373,7 +394,9 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
       {/* Genres */}
       {!loading && !error && (
         <section className="px-6">
-          <h2 className="text-lg font-bold mb-4">Browse by Genre</h2>
+          <h2 className="text-lg font-bold mb-4">
+            {settings.language === 'es' ? 'Buscar por Género' : settings.language === 'pt' ? 'Buscar por Gênero' : 'Browse by Genre'}
+          </h2>
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: 'Adventure', icon: 'explore', color: 'var(--color-primary)' },
@@ -389,14 +412,12 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook }) =
                 <div className="size-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: g.color + '22' }}>
                   <span className="material-symbols-outlined" style={{ color: g.color }}>{g.icon}</span>
                 </div>
-                <span className="text-sm font-bold group-hover:text-primary transition-colors">{g.label}</span>
+                <span className="text-sm font-bold group-hover:text-primary transition-colors">{getGenreLabel(g.label)}</span>
               </button>
             ))}
           </div>
         </section>
       )}
-
-
     </div>
   );
 };

@@ -1,14 +1,18 @@
 
 import React from 'react';
-import { ViewType } from '../types';
+import { ViewType, UserSettings } from '../types';
+import { getTranslation } from '../translations';
 
 interface BottomNavProps {
   activeView: ViewType;
   onNavigate: (view: ViewType) => void;
   onAddClick: () => void;
+  settings: UserSettings;
 }
 
-const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate, onAddClick }) => {
+const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate, onAddClick, settings }) => {
+  const t = getTranslation(settings.language || 'en');
+
   const NavItem: React.FC<{ view: ViewType; icon: string; label: string }> = ({ view, icon, label }) => {
     const isActive = activeView === view;
     return (
@@ -34,8 +38,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate, onAddClic
       <div className="relative mx-auto max-w-md h-[72px] rounded-[2rem] glass-dark flex items-center border border-ui-border shadow-2xl overflow-visible px-2">
         {/* Left nav items */}
         <div className="flex flex-1 justify-around">
-          <NavItem view={ViewType.HOME} icon="grid_view" label="Library" />
-          <NavItem view={ViewType.DISCOVER} icon="explore" label="Explore" />
+          <NavItem view={ViewType.HOME} icon="grid_view" label={t.library} />
+          <NavItem view={ViewType.DISCOVER} icon="explore" label={t.explore} />
         </div>
 
         {/* Central Add Button */}
@@ -51,8 +55,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate, onAddClic
 
         {/* Right nav items */}
         <div className="flex flex-1 justify-around">
-          <NavItem view={ViewType.STATS} icon="bar_chart" label="Stats" />
-          <NavItem view={ViewType.PROFILE} icon="person" label="Profile" />
+          <NavItem view={ViewType.STATS} icon="bar_chart" label={t.stats} />
+          <NavItem view={ViewType.PROFILE} icon="person" label={t.profile} />
         </div>
       </div>
     </div>

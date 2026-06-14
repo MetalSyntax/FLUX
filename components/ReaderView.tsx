@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Book, BookType, UserSettings, Bookmark } from '../types';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -10,6 +9,7 @@ import { createExtractorFromData } from 'node-unrar-js';
 import unrarWasmUrl from 'node-unrar-js/esm/js/unrar.wasm?url';
 import { Buffer } from 'buffer';
 import * as db from '../db';
+import { getTranslation } from '../translations';
 
 // @ts-ignore
 window.Buffer = Buffer;
@@ -24,7 +24,23 @@ interface ReaderViewProps {
 
 const BOOKMARK_COLORS = ['var(--color-primary)', 'var(--color-purple)', 'var(--color-red)', 'var(--color-green)', 'var(--color-favorite)'];
 
+const EPUB_THEMES = [
+  { name: 'Light', bg: '#ffffff', text: '#1a1a1a' },
+  { name: 'Sepia', bg: '#f5eccd', text: '#433422' },
+  { name: 'Mint', bg: '#f0f7f4', text: '#2d4a3e' },
+  { name: 'Dark', bg: '#0f172a', text: '#cbd5e1' },
+];
+
+const EPUB_FONTS = [
+  { name: 'System Sans', family: 'system-ui, -apple-system, sans-serif' },
+  { name: 'Serif (Georgia)', family: 'Georgia, serif' },
+  { name: 'Dyslexic/Outfit', family: "'Outfit', 'Inter', sans-serif" },
+  { name: 'Monospace', family: "'Courier New', Courier, monospace" },
+];
+
 const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProgressUpdate }) => {
+  const t = getTranslation(settings.language || 'en');
+
   const [currentPage, setCurrentPage] = useState(book.currentPage || 1);
   const [totalPages, setTotalPages] = useState(book.totalPages || 0);
   const [showControls, setShowControls] = useState(true);
@@ -38,6 +54,19 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
   const [turnDirection, setTurnDirection] = useState<'next' | 'prev' | null>(null);
   const [isEntering, setIsEntering] = useState(false);
 
+  // EPUB themes and fonts state
+  const [epubThemeIdx, setEpubThemeIdx] = useState(() => {
+    const saved = localStorage.getItem('flux_epub_theme_idx');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [epubFontIdx, setEpubFontIdx] = useState(() => {
+    const saved = localStorage.getItem('flux_epub_font_idx');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  const activeEpubTheme = EPUB_THEMES[epubThemeIdx] || EPUB_THEMES[0];
+  const activeEpubFont = EPUB_FONTS[epubFontIdx] || EPUB_FONTS[0];
+
   // New v2 state
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [showBookmarks, setShowBookmarks] = useState(false);
@@ -49,21 +78,19 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
   // PDF Refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null);
+  const renderTokenRef = useRef(0);
 
   // EPUB Refs
   const epubViewerRef = useRef<HTMLDivElement>(null);
-  const renditionRef = useRef<Rendition | null>(null);
   const bookRef = useRef<any>(null);
+  const renditionRef = useRef<Rendition | null>(null);
 
-  // CBR/CBZ
+  // CBR images
   const [comicImages, setComicImages] = useState<string[]>([]);
 
   // Touch/swipe refs
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
-
-  // Render token — cancels stale PDF renders when page changes quickly
-  const renderTokenRef = useRef(0);
 
   // Session tracking refs
   const sessionStartRef = useRef({ time: Date.now(), page: book.currentPage || 1 });
@@ -114,7 +141,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
   useEffect(() => {
     const loadBook = async () => {
       if (!book.file) {
-        setError('File not found. Please re-add this book to your library.');
+        setError(settings.language === 'es' ? 'Archivo no encontrado.' : settings.language === 'pt' ? 'Arquivo não encontrado.' : 'File not found. Please re-add this book to your library.');
         setLoading(false);
         return;
       }
@@ -136,9 +163,6 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
             await p1.render({ canvasContext: cv.getContext('2d')!, viewport: vp, canvas: cv }).promise;
             onProgressUpdate(book.id, currentPage, pdf.numPages, cv.toDataURL());
           } catch { /* cover optional */ }
-          // Initial render is handled by the useEffect below (triggered by setTotalPages).
-          // Calling it again here with a stale closure value of currentPage would
-          // overwrite the correct page if the user navigated while the PDF was loading.
           setLoading(false);
         }
         else if (book.type === BookType.EPUB) {
@@ -251,7 +275,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
           setLoading(false);
         }
       } catch (err: any) {
-        setError('Failed to load: ' + err.message);
+        setError(t.errorLoading + err.message);
         setLoading(false);
       }
     };
@@ -268,10 +292,10 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
         'background-image': 'none !important',
       },
       body: {
-        'background-color': `${ct.bg} !important`,
+        'background-color': `${activeEpubTheme.bg} !important`,
         'background-image': 'none !important',
-        'color': `${ct.text} !important`,
-        'font-family': 'system-ui, -apple-system, sans-serif !important',
+        'color': `${activeEpubTheme.text} !important`,
+        'font-family': `${activeEpubFont.family} !important`,
         'padding': '0 40px !important',
       },
       p: { 'line-height': '1.6 !important', 'margin-bottom': '1em !important' }
@@ -281,7 +305,9 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
 
   useEffect(() => {
     if (renditionRef.current) applyEpubTheme(renditionRef.current);
-  }, [settings.theme, fontSize]);
+    localStorage.setItem('flux_epub_theme_idx', String(epubThemeIdx));
+    localStorage.setItem('flux_epub_font_idx', String(epubFontIdx));
+  }, [epubThemeIdx, epubFontIdx, fontSize]);
 
   useEffect(() => {
     const updateEpubFlow = async () => {
@@ -311,12 +337,18 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
               const pct = bookRef.current.locations.percentageFromCfi(cfi);
               const newPage = Math.floor(pct * bookRef.current.locations.length()) + 1;
               setCurrentPage(newPage);
+              onProgressUpdate(book.id, newPage, bookRef.current.locations.length(), undefined, cfi);
+            } else {
+              onProgressUpdate(book.id, currentPage, undefined, undefined, cfi);
             }
-          } catch {}
+          } catch {
+            onProgressUpdate(book.id, currentPage, undefined, undefined, cfi);
+          }
         });
 
-        if (currentCfi) await rendition.display(currentCfi);
-        else await rendition.display();
+        if (currentCfi) {
+          await rendition.display(currentCfi);
+        }
       }
     };
     updateEpubFlow();
@@ -324,14 +356,13 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
 
   const renderPdfPage = async (pageNumber: number) => {
     if (!pdfDocRef.current || !canvasRef.current) return;
-    // Claim a token; if a newer call arrives before this one finishes, abort.
     const token = ++renderTokenRef.current;
     const page = await pdfDocRef.current.getPage(pageNumber);
     if (token !== renderTokenRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const vp = page.getViewport({ scale: 1.5 * zoom });
+    const vp = page.getViewport({ scale: 1.5 });
     canvas.height = vp.height; canvas.width = vp.width;
     await page.render({ canvasContext: ctx, viewport: vp, canvas }).promise;
   };
@@ -339,7 +370,11 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
   useEffect(() => {
     if (book.type === BookType.PDF && !scrollMode) renderPdfPage(currentPage);
     onProgressUpdate(book.id, currentPage, totalPages);
-  }, [currentPage, zoom, totalPages]);
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    if (book.type === BookType.PDF && !scrollMode) renderPdfPage(currentPage);
+  }, [zoom]);
 
   // ── Scroll mode: pre-render all pages as data URLs ────────────────────
   useEffect(() => {
@@ -351,19 +386,18 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
       for (let i = 1; i <= total; i++) {
         const page = await pdfDocRef.current!.getPage(i);
         const cv = document.createElement('canvas');
-        const vp = page.getViewport({ scale: 1.2 * zoom });
+        const vp = page.getViewport({ scale: 1.2 });
         cv.width = vp.width; cv.height = vp.height;
         await page.render({ canvasContext: cv.getContext('2d')!, viewport: vp, canvas: cv }).promise;
         urls.push(cv.toDataURL('image/jpeg', 0.85));
         setScrollPages([...urls]);
-        // Yield to the main thread to allow UI to update and not block scrolling
         await new Promise(r => setTimeout(r, 10));
       }
       setScrollPages(urls);
       setRenderingScroll(false);
     };
     renderAll();
-  }, [scrollMode, zoom]);
+  }, [scrollMode]);
 
   // ── Navigation ────────────────────────────────────────────────────────
   const pageStep = doublePage && book.type === BookType.CBR ? 2 : 1;
@@ -394,29 +428,33 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
     }, 350);
   }, [currentPage, isPageTurning, pageStep]);
 
-  // ── Touch/swipe handlers ──────────────────────────────────────────────
+  // ── Swipe detection ───────────────────────────────────────────────────
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    const dy = e.changedTouches[0].clientY - touchStartY.current;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-      if (dx < 0) goToNext();
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 60) {
+      if (deltaX < 0) goToNext();
       else goToPrev();
     }
   };
 
-  // ── Bookmarks ─────────────────────────────────────────────────────────
+  // Bookmarks Logic
+  const isBookmarkedOnCurrentPage = bookmarks.some((b) => b.page === currentPage);
+
   const addBookmark = async () => {
+    const cfi = renditionRef.current?.location?.start?.cfi;
+    const label = `${t.library} ${currentPage}`;
     const bm: Bookmark = {
       id: crypto.randomUUID(),
       bookId: book.id,
       page: currentPage,
-      cfi: book.type === BookType.EPUB ? (renditionRef.current as any)?.location?.start?.cfi : undefined,
-      label: `Page ${currentPage}`,
+      cfi,
+      label,
       color: BOOKMARK_COLORS[bookmarks.length % BOOKMARK_COLORS.length],
       createdAt: Date.now(),
     };
@@ -429,93 +467,55 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
     setBookmarks((prev) => prev.filter((b) => b.id !== id));
   };
 
-  const jumpToBookmark = (bm: Bookmark) => {
-    if (book.type === BookType.EPUB && renditionRef.current && bm.cfi) {
-      renditionRef.current.display(bm.cfi);
-    } else {
-      setCurrentPage(bm.page);
-    }
-    setShowBookmarks(false);
-  };
-
-  // ── Share ─────────────────────────────────────────────────────────────
   const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: book.title,
-          text: `I'm reading "${book.title}" by ${book.author} — ${book.progress}% complete`,
-        });
-      } catch { /* user cancelled */ }
-    }
+    try {
+      await navigator.share({
+        title: book.title,
+        text: `${settings.language === 'es' ? '¡Estoy leyendo' : settings.language === 'pt' ? 'Estou lendo' : 'I am reading'} "${book.title}" ${settings.language === 'es' ? 'en' : settings.language === 'pt' ? 'no' : 'on'} FLUX!`,
+      });
+    } catch { /* optional */ }
   };
-
-  const isBookmarkedOnCurrentPage = bookmarks.some((b) => b.page === currentPage);
 
   return (
     <div
-      className="fixed inset-0 z-[100] overflow-hidden flex flex-col items-center justify-center transition-all duration-300"
-      style={{ backgroundColor: ct.bg, filter: `brightness(${brightness}%)`, color: ct.text }}
+      className="fixed inset-0 z-[100] flex flex-col select-none touch-none focus:outline-none overflow-hidden"
+      style={{ backgroundColor: book.type === BookType.EPUB ? activeEpubTheme.bg : 'var(--ui-bg)' }}
+      tabIndex={0}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Click interaction zones (non-EPUB) */}
-      {!loading && !error && book.type !== BookType.EPUB && !scrollMode && (
-        <div className="absolute inset-0 z-10 flex">
-          <div className="flex-1 cursor-w-resize" onClick={goToPrev} />
-          <div className="w-1/3 cursor-pointer" onClick={() => setShowControls((p) => !p)} />
-          <div className="flex-1 cursor-e-resize" onClick={goToNext} />
-        </div>
-      )}
-
-      {/* Content Area */}
-      <div className="relative w-full h-full flex items-center justify-center overflow-auto transition-colors duration-300"
-        style={{ backgroundColor: book.type === BookType.EPUB ? ct.bg : 'transparent' }}>
+      {/* ── Main Content Area ───────────────────────────────────────────────── */}
+      <div 
+        className="relative flex-1 flex items-center justify-center overflow-hidden"
+        style={book.type === BookType.EPUB ? { backgroundColor: activeEpubTheme.bg } : {}}
+      >
+        <style>{`
+          .brightness-overlay {
+            mix-blend-mode: multiply;
+            background-color: rgb(0,0,0);
+            pointer-events: none;
+            position: absolute;
+            inset: 0;
+            z-index: 150;
+            transition: opacity 0.3s ease;
+          }
+        `}</style>
+        <div className="brightness-overlay" style={{ opacity: 1 - brightness / 100 }} />
 
         {loading && (
           <div className="flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-700">
-            <div className="relative">
-              <div className="size-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-              <div className="absolute inset-0 blur-xl bg-primary/20 rounded-full animate-pulse" />
-            </div>
-            <p className="text-lg font-bold">Loading...</p>
+            <div className="size-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+            <p className="text-sm font-bold tracking-widest uppercase text-primary animate-pulse">{t.loadingBook}</p>
           </div>
         )}
 
         {error && (
-          <div className="max-w-md p-10 rounded-[2.5rem] text-center border" style={{ backgroundColor: ct.glass, borderColor: 'rgba(239,68,68,0.3)' }}>
-            <div className="size-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="material-symbols-outlined text-4xl text-red-500">error</span>
-            </div>
-            <h3 className="text-xl font-bold mb-2">Could not open book</h3>
-            <p className="opacity-50 text-sm mb-8 leading-relaxed">{error}</p>
-            <button onClick={onClose} className="w-full py-4 rounded-2xl font-bold border" style={{ backgroundColor: ct.glass, borderColor: ct.border }}>
-              Back to Library
+          <div className="text-center px-6 max-w-sm space-y-4">
+            <span className="material-symbols-outlined text-red-400 text-5xl font-light">warning</span>
+            <p className="text-sm font-medium opacity-80">{error}</p>
+            <button onClick={onClose} className="px-5 py-2.5 rounded-full bg-ui-bg-accented text-xs font-bold border border-ui-border">
+              {settings.language === 'es' ? 'Volver' : settings.language === 'pt' ? 'Voltar' : 'Go Back'}
             </button>
-          </div>
-        )}
-
-        {/* EPUB viewer */}
-        {book.type === BookType.EPUB && (
-          <div className="relative w-full h-full max-w-4xl mx-auto">
-            <div
-              ref={epubViewerRef}
-              className={`w-full h-full shadow-2xl transition-opacity duration-500 ${
-                loading ? 'opacity-0' : 'opacity-100'
-              } ${!loading && isPageTurning
-                  ? (turnDirection === 'next' ? 'epub-next-exit' : 'epub-prev-exit')
-                  : (!loading && isEntering
-                      ? (turnDirection === 'next' ? 'epub-next-enter' : 'epub-prev-enter')
-                      : '')
-              }`}
-            />
-            {!loading && !scrollMode && (
-              <div className="absolute inset-0 z-20 flex pointer-events-none">
-                <div className="flex-1 cursor-w-resize pointer-events-auto" onClick={goToPrev} />
-                <div className="w-1/3 cursor-pointer pointer-events-auto" onClick={() => setShowControls((p) => !p)} />
-                <div className="flex-1 cursor-e-resize pointer-events-auto" onClick={goToNext} />
-              </div>
-            )}
           </div>
         )}
 
@@ -530,49 +530,90 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
                   </div>
                 )}
                 {scrollPages.map((src, i) => (
-                  <img key={i} src={src} className="w-full shadow-lg rounded-lg bg-white" alt={`Page ${i + 1}`} />
+                  <img 
+                    key={i} 
+                    src={src} 
+                    className="shadow-lg rounded-lg bg-white mx-auto transition-all duration-200" 
+                    style={{
+                      width: zoom > 1 ? `${zoom * 100}%` : '100%',
+                      maxWidth: zoom > 1 ? 'none' : '100%',
+                    }}
+                    alt={`Page ${i + 1}`} 
+                  />
                 ))}
                 {pdfDocRef.current && pdfDocRef.current.numPages > 30 && (
-                  <p className="text-center text-xs opacity-30 py-4">Scroll mode shows the first 30 pages.</p>
+                  <p className="text-center text-xs opacity-30 py-4">
+                    {settings.language === 'es' ? 'El modo continuo muestra las primeras 30 páginas.' : settings.language === 'pt' ? 'O modo contínuo exibe as primeiras 30 páginas.' : 'Scroll mode shows the first 30 pages.'}
+                  </p>
                 )}
               </div>
             )}
 
             {/* PDF — paginated mode */}
             {book.type === BookType.PDF && !scrollMode && (
-              <div className="page-flip flex items-center justify-center w-full h-full">
+              <div className="page-flip flex items-center justify-center w-full h-full overflow-auto p-4" onClick={() => setShowControls((p) => !p)}>
                 <div
-                  className={`p-8 pb-32 pt-20 ${
+                  className={`flex items-center justify-center transition-all duration-200 ${
                     isPageTurning
                       ? (turnDirection === 'next' ? 'page-flip-next-exit' : 'page-flip-prev-exit')
                       : (isEntering ? (turnDirection === 'next' ? 'page-flip-next-enter' : 'page-flip-prev-enter') : '')
                   }`}
+                  style={{
+                    width: `${zoom * 100}%`,
+                    maxWidth: zoom > 1 ? 'none' : '100%',
+                  }}
                 >
-                  <canvas ref={canvasRef} className="max-w-full shadow-[0_20px_60px_rgba(0,0,0,0.8)] rounded-lg bg-white" />
+                  <canvas ref={canvasRef} className="w-full shadow-[0_20px_60px_rgba(0,0,0,0.8)] rounded-lg bg-white" />
                 </div>
               </div>
+            )}
+
+            {/* EPUB Viewer container */}
+            {book.type === BookType.EPUB && (
+              <div 
+                ref={epubViewerRef} 
+                className="w-full h-full transition-colors duration-300" 
+                style={{ backgroundColor: activeEpubTheme.bg }}
+              />
             )}
 
             {/* CBR/CBZ — scroll mode */}
             {book.type === BookType.CBR && scrollMode && (
               <div className="w-full h-full overflow-y-auto py-0 px-0 space-y-0 bg-black hide-scrollbar flex flex-col items-center" onClick={() => setShowControls((p) => !p)}>
                 {comicImages.map((src, i) => (
-                  <img key={i} src={src} className="w-full max-w-4xl object-contain" alt={`Page ${i + 1}`} loading="lazy" />
+                  <img 
+                    key={i} 
+                    src={src} 
+                    className="transition-all duration-200" 
+                    style={{
+                      width: zoom > 1 ? `${zoom * 100}%` : '100%',
+                      maxWidth: zoom > 1 ? 'none' : '4xl',
+                      objectFit: 'contain',
+                    }}
+                    alt={`Page ${i + 1}`} 
+                    loading="lazy" 
+                  />
                 ))}
               </div>
             )}
 
             {/* CBR/CBZ — single page */}
             {book.type === BookType.CBR && !doublePage && !scrollMode && comicImages[currentPage - 1] && (
-              <div className="relative h-full w-full flex items-center justify-center p-4 lg:p-10 page-flip">
+              <div className="relative h-full w-full flex items-center justify-center p-4 lg:p-10 page-flip overflow-auto" onClick={() => setShowControls((p) => !p)}>
                 <img
                   key={currentPage}
                   src={comicImages[currentPage - 1]}
-                  className={`max-h-full max-w-full object-contain shadow-[0_20px_80px_rgba(0,0,0,0.6)] rounded-sm ${
+                  className={`shadow-[0_20px_80px_rgba(0,0,0,0.6)] rounded-sm transition-all duration-200 ${
                     isPageTurning
                       ? (turnDirection === 'next' ? 'page-flip-next-exit' : 'page-flip-prev-exit')
                       : (isEntering ? (turnDirection === 'next' ? 'page-flip-next-enter' : 'page-flip-prev-enter') : '')
                   }`}
+                  style={{
+                    width: zoom > 1 ? `${zoom * 100}%` : 'auto',
+                    maxWidth: zoom > 1 ? 'none' : '100%',
+                    maxHeight: zoom > 1 ? 'none' : '100%',
+                    objectFit: 'contain',
+                  }}
                   alt={`Page ${currentPage}`}
                 />
                 <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-black/40 to-transparent pointer-events-none" />
@@ -582,12 +623,32 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
 
             {/* CBR/CBZ — double page */}
             {book.type === BookType.CBR && doublePage && !scrollMode && (
-              <div className="relative h-full w-full flex items-center justify-center gap-1 p-2 lg:p-6">
+              <div className="relative h-full w-full flex items-center justify-center gap-1 p-2 lg:p-6 overflow-auto" onClick={() => setShowControls((p) => !p)}>
                 {comicImages[currentPage - 1] && (
-                  <img src={comicImages[currentPage - 1]} className="max-h-full max-w-[49%] object-contain shadow-xl rounded-sm" alt={`Page ${currentPage}`} />
+                  <img 
+                    src={comicImages[currentPage - 1]} 
+                    className="shadow-xl rounded-sm transition-all duration-200" 
+                    style={{
+                      width: zoom > 1 ? `${zoom * 49}%` : 'auto',
+                      maxWidth: zoom > 1 ? 'none' : '49%',
+                      maxHeight: zoom > 1 ? 'none' : '100%',
+                      objectFit: 'contain',
+                    }}
+                    alt={`Page ${currentPage}`} 
+                  />
                 )}
                 {comicImages[currentPage] && (
-                  <img src={comicImages[currentPage]} className="max-h-full max-w-[49%] object-contain shadow-xl rounded-sm" alt={`Page ${currentPage + 1}`} />
+                  <img 
+                    src={comicImages[currentPage]} 
+                    className="shadow-xl rounded-sm transition-all duration-200" 
+                    style={{
+                      width: zoom > 1 ? `${zoom * 49}%` : 'auto',
+                      maxWidth: zoom > 1 ? 'none' : '49%',
+                      maxHeight: zoom > 1 ? 'none' : '100%',
+                      objectFit: 'contain',
+                    }}
+                    alt={`Page ${currentPage + 1}`} 
+                  />
                 )}
               </div>
             )}
@@ -598,11 +659,23 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
       {/* ── Top Bar ──────────────────────────────────────────────────────── */}
       <div
         className={`fixed top-0 inset-x-0 z-[120] px-4 sm:px-6 py-3 sm:py-4 transition-all duration-500 ease-out transform border-b ${showControls ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}
-        style={{ backgroundColor: ct.bg, borderColor: ct.border, backdropFilter: 'blur(16px)' }}
+        style={{ 
+          backgroundColor: book.type === BookType.EPUB ? activeEpubTheme.bg + 'd8' : ct.bg + 'd8', 
+          color: book.type === BookType.EPUB ? activeEpubTheme.text : ct.text,
+          borderColor: book.type === BookType.EPUB ? 'rgba(0,0,0,0.1)' : ct.border,
+          backdropFilter: 'blur(16px)' 
+        }}
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={onClose} className="size-10 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all active:scale-90 shrink-0 border" style={{ backgroundColor: ct.glass, borderColor: ct.border }}>
+            <button 
+              onClick={onClose} 
+              className="size-10 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all active:scale-90 shrink-0 border" 
+              style={{ 
+                backgroundColor: 'rgba(255,255,255,0.05)', 
+                borderColor: book.type === BookType.EPUB ? 'rgba(0,0,0,0.15)' : ct.border 
+              }}
+            >
               <span className="material-symbols-outlined text-xl">close</span>
             </button>
             <div className="min-w-0">
@@ -618,7 +691,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
               className="size-10 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all active:scale-90 border"
               style={isBookmarkedOnCurrentPage
                 ? { backgroundColor: 'rgba(0, 192, 139, 0.15)', borderColor: 'rgba(0, 192, 139, 0.4)', color: 'var(--color-primary)' }
-                : { backgroundColor: ct.glass, borderColor: ct.border }
+                : { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: book.type === BookType.EPUB ? 'rgba(0,0,0,0.15)' : ct.border }
               }
             >
               <span className="material-symbols-outlined text-xl" style={isBookmarkedOnCurrentPage ? { fontVariationSettings: "'FILL' 1" } : {}}>bookmark</span>
@@ -628,14 +701,21 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
             <button
               onClick={() => setShowBookmarks(!showBookmarks)}
               className={`size-10 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all active:scale-90 border ${showBookmarks ? 'bg-primary border-primary text-white' : ''}`}
-              style={!showBookmarks ? { backgroundColor: ct.glass, borderColor: ct.border } : {}}
+              style={!showBookmarks ? { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: book.type === BookType.EPUB ? 'rgba(0,0,0,0.15)' : ct.border } : {}}
             >
               <span className="material-symbols-outlined text-xl">bookmarks</span>
             </button>
 
             {/* Share */}
             {navigator.share && (
-              <button onClick={handleShare} className="size-10 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all active:scale-90 border" style={{ backgroundColor: ct.glass, borderColor: ct.border }}>
+              <button 
+                onClick={handleShare} 
+                className="size-10 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all active:scale-90 border" 
+                style={{ 
+                  backgroundColor: 'rgba(255,255,255,0.05)', 
+                  borderColor: book.type === BookType.EPUB ? 'rgba(0,0,0,0.15)' : ct.border 
+                }}
+              >
                 <span className="material-symbols-outlined text-xl">share</span>
               </button>
             )}
@@ -644,29 +724,47 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
             <button
               onClick={() => setShowSettings(!showSettings)}
               className={`size-10 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all active:scale-90 border ${showSettings ? 'bg-primary border-primary text-white' : ''}`}
-              style={!showSettings ? { backgroundColor: ct.glass, borderColor: ct.border } : {}}
+              style={!showSettings ? { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: book.type === BookType.EPUB ? 'rgba(0,0,0,0.15)' : ct.border } : {}}
             >
               <span className="material-symbols-outlined text-xl">settings</span>
             </button>
           </div>
         </div>
 
-        {/* Bookmarks Panel */}
+        {/* Bookmarks Panel Drawer */}
         <div
-          className={`absolute top-full right-4 sm:right-6 mt-4 w-72 rounded-3xl p-5 space-y-4 shadow-2xl transition-all duration-500 transform border z-[130] ${showBookmarks && showControls ? 'translate-y-0 opacity-100' : '-translate-y-10 opacity-0 pointer-events-none'}`}
-          style={{ backgroundColor: 'var(--ui-bg-elevated)', borderColor: ct.border }}
+          className={`absolute top-full right-4 sm:right-6 mt-4 w-72 rounded-3xl p-6 shadow-2xl transition-all duration-500 transform border z-[130] ${showBookmarks && showControls && !showSettings ? 'translate-y-0 opacity-100' : '-translate-y-10 opacity-0 pointer-events-none'}`}
+          style={{ 
+            backgroundColor: book.type === BookType.EPUB ? activeEpubTheme.bg : 'var(--ui-bg-elevated)', 
+            borderColor: book.type === BookType.EPUB ? 'rgba(0,0,0,0.1)' : ct.border,
+            color: book.type === BookType.EPUB ? activeEpubTheme.text : 'inherit'
+          }}
         >
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Bookmarks</p>
-            <span className="text-[10px] font-bold text-primary">{bookmarks.length}</span>
+          <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+            <span className="text-xs font-bold uppercase tracking-widest">{t.bookmarks}</span>
+            <span className="text-[10px] font-bold opacity-30">{bookmarks.length}</span>
           </div>
+
           {bookmarks.length === 0 ? (
-            <p className="text-xs opacity-30 text-center py-4">No bookmarks yet. Tap the bookmark icon to add one.</p>
+            <div className="py-8 text-center opacity-40">
+              <span className="material-symbols-outlined text-3xl font-light mb-2">bookmark_border</span>
+              <p className="text-[10px] font-medium">{t.noBookmarks}</p>
+            </div>
           ) : (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {bookmarks.sort((a, b) => a.page - b.page).map((bm) => (
-                <div key={bm.id} className="flex items-center gap-3 group">
-                  <button onClick={() => jumpToBookmark(bm)} className="flex-1 flex items-center gap-3 text-left hover:opacity-80 transition-opacity">
+            <div className="max-h-60 overflow-y-auto mt-3 space-y-2 pr-1 hide-scrollbar">
+              {bookmarks.map((bm) => (
+                <div key={bm.id} className="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-white/5 transition-all group">
+                  <button
+                    onClick={() => {
+                      if (book.type === BookType.EPUB && renditionRef.current && bm.cfi) {
+                        renditionRef.current.display(bm.cfi);
+                      } else {
+                        setCurrentPage(bm.page);
+                      }
+                      setShowBookmarks(false);
+                    }}
+                    className="flex items-center gap-3 text-left flex-1 min-w-0"
+                  >
                     <div className="size-2 rounded-full shrink-0" style={{ backgroundColor: bm.color }} />
                     <div>
                       <p className="text-xs font-bold">{bm.label}</p>
@@ -685,12 +783,16 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
         {/* Settings Panel */}
         <div
           className={`absolute top-full right-4 sm:right-6 mt-4 w-72 rounded-3xl p-6 space-y-6 shadow-2xl transition-all duration-500 transform border z-[130] ${showSettings && showControls && !showBookmarks ? 'translate-y-0 opacity-100' : '-translate-y-10 opacity-0 pointer-events-none'}`}
-          style={{ backgroundColor: 'var(--ui-bg-elevated)', borderColor: ct.border }}
+          style={{ 
+            backgroundColor: book.type === BookType.EPUB ? activeEpubTheme.bg : 'var(--ui-bg-elevated)', 
+            borderColor: book.type === BookType.EPUB ? 'rgba(0,0,0,0.1)' : ct.border,
+            color: book.type === BookType.EPUB ? activeEpubTheme.text : 'inherit'
+          }}
         >
           {/* Brightness */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Brightness</span>
+              <span className="text-[10px] font-bold opacity-40 uppercase tracking-widest">{t.brightness}</span>
               <span className="text-xs font-bold text-primary">{brightness}%</span>
             </div>
             <div className="flex items-center gap-3">
@@ -704,7 +806,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
           {book.type !== BookType.EPUB && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Zoom</span>
+                <span className="text-[10px] font-bold opacity-40 uppercase tracking-widest">{t.zoom}</span>
                 <span className="text-xs font-bold text-primary">{Math.round(zoom * 100)}%</span>
               </div>
               <div className="flex items-center gap-3">
@@ -733,7 +835,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
           {book.type === BookType.EPUB && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Font Size</span>
+                <span className="text-[10px] font-bold opacity-40 uppercase tracking-widest">{t.fontSize}</span>
                 <span className="text-xs font-bold text-primary">{fontSize}%</span>
               </div>
               <div className="flex items-center gap-3">
@@ -758,12 +860,62 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
             </div>
           )}
 
+          {/* EPUB Reading Theme */}
+          {book.type === BookType.EPUB && (
+            <div className="space-y-3">
+              <span className="text-[10px] font-bold opacity-40 uppercase tracking-widest">{settings.language === 'es' ? 'Tema del Libro' : settings.language === 'pt' ? 'Tema do Livro' : 'Book Theme'}</span>
+              <div className="grid grid-cols-4 gap-2">
+                {EPUB_THEMES.map((theme, idx) => (
+                  <button
+                    key={theme.name}
+                    type="button"
+                    onClick={() => setEpubThemeIdx(idx)}
+                    className="h-8 rounded-lg flex items-center justify-center border font-bold text-[10px] transition-all active:scale-95"
+                    style={{
+                      backgroundColor: theme.bg,
+                      color: theme.text,
+                      borderColor: epubThemeIdx === idx ? 'var(--color-primary)' : 'rgba(255,255,255,0.1)',
+                      boxShadow: epubThemeIdx === idx ? '0 0 0 2px var(--color-primary)' : 'none',
+                    }}
+                  >
+                    {theme.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* EPUB Reading Font */}
+          {book.type === BookType.EPUB && (
+            <div className="space-y-3">
+              <span className="text-[10px] font-bold opacity-40 uppercase tracking-widest">{settings.language === 'es' ? 'Tipografía' : settings.language === 'pt' ? 'Tipografia' : 'Typography'}</span>
+              <div className="grid grid-cols-2 gap-2">
+                {EPUB_FONTS.map((font, idx) => (
+                  <button
+                    key={font.name}
+                    type="button"
+                    onClick={() => setEpubFontIdx(idx)}
+                    className={`py-1.5 px-2 rounded-lg border text-[10px] transition-all active:scale-95 text-left truncate`}
+                    style={{
+                      fontFamily: font.family,
+                      borderColor: epubFontIdx === idx ? 'var(--color-primary)' : 'rgba(255,255,255,0.1)',
+                      backgroundColor: epubFontIdx === idx ? 'rgba(0, 192, 139, 0.1)' : 'transparent',
+                      color: epubFontIdx === idx ? 'var(--color-primary)' : 'inherit',
+                    }}
+                  >
+                    {font.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Scroll mode (PDF / EPUB / CBR) */}
           {(book.type === BookType.PDF || book.type === BookType.EPUB || book.type === BookType.CBR) && (
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Scroll Mode</p>
-                <p className="text-[9px] opacity-20 mt-0.5">Continuous vertical flow</p>
+                <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">{t.scrollMode}</p>
+                <p className="text-[9px] opacity-20 mt-0.5">{t.scrollModeDesc}</p>
               </div>
               <button
                 onClick={() => setScrollMode((p) => !p)}
@@ -778,8 +930,8 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
           {book.type === BookType.CBR && (
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">Double Page</p>
-                <p className="text-[9px] opacity-20 mt-0.5">Side-by-side spreads</p>
+                <p className="text-[10px] font-bold opacity-40 uppercase tracking-widest">{t.doublePage}</p>
+                <p className="text-[9px] opacity-20 mt-0.5">{t.doublePageDesc}</p>
               </div>
               <button
                 onClick={() => setDoublePage((p) => !p)}
@@ -796,12 +948,17 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
       {!loading && !error && !scrollMode && (
         <div
           className={`fixed bottom-0 inset-x-0 z-[110] px-4 sm:px-6 py-6 sm:py-8 pb-10 sm:pb-12 transition-all duration-500 ease-out transform border-t ${showControls ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}
-          style={{ backgroundColor: ct.bg, borderColor: ct.border, backdropFilter: 'blur(16px)' }}
+          style={{ 
+            backgroundColor: book.type === BookType.EPUB ? activeEpubTheme.bg + 'd8' : ct.bg + 'd8', 
+            color: book.type === BookType.EPUB ? activeEpubTheme.text : ct.text,
+            borderColor: book.type === BookType.EPUB ? 'rgba(0,0,0,0.1)' : ct.border,
+            backdropFilter: 'blur(16px)' 
+          }}
         >
           <div className="max-w-3xl mx-auto space-y-4">
             <div className="flex justify-between items-center px-2">
               <button onClick={goToPrev} disabled={currentPage === 1} className="flex items-center gap-1 text-[10px] font-bold opacity-40 uppercase tracking-widest hover:text-primary transition-colors hover:opacity-100 disabled:opacity-20">
-                <span className="material-symbols-outlined text-base">chevron_left</span> Prev
+                <span className="material-symbols-outlined text-base">chevron_left</span> {t.prev}
               </button>
               <div className="flex flex-col items-center gap-0.5">
                 <span className="text-[10px] font-bold px-3 py-1 rounded-full border shadow-lg" style={{ backgroundColor: 'rgba(0, 192, 139, 0.15)', borderColor: 'rgba(0, 192, 139, 0.3)', color: 'var(--color-primary)' }}>
@@ -810,7 +967,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
                 {totalPages > 0 && <span className="text-[8px] opacity-30 font-bold uppercase tracking-widest">{Math.round((currentPage / totalPages) * 100)}%</span>}
               </div>
               <button onClick={goToNext} disabled={currentPage >= totalPages} className="flex items-center gap-1 text-[10px] font-bold opacity-40 uppercase tracking-widest hover:text-primary transition-colors hover:opacity-100 disabled:opacity-20">
-                Next <span className="material-symbols-outlined text-base">chevron_right</span>
+                {t.next} <span className="material-symbols-outlined text-base">chevron_right</span>
               </button>
             </div>
             <div className="px-2">
@@ -842,7 +999,12 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
               }
             }}
             className="size-12 rounded-2xl border flex items-center justify-center text-primary active:scale-90 transition-all shadow-2xl hover:bg-white/10"
-            style={{ backgroundColor: ct.bg, borderColor: ct.border, backdropFilter: 'blur(12px)' }}
+            style={{ 
+              backgroundColor: book.type === BookType.EPUB ? activeEpubTheme.bg : ct.bg, 
+              color: 'var(--color-primary)',
+              borderColor: book.type === BookType.EPUB ? 'rgba(0,0,0,0.1)' : ct.border,
+              backdropFilter: 'blur(12px)' 
+            }}
             title="Zoom In"
           >
             <span className="material-symbols-outlined text-2xl">zoom_in</span>
@@ -856,7 +1018,12 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
               }
             }}
             className="size-12 rounded-2xl border flex items-center justify-center text-primary active:scale-90 transition-all shadow-2xl hover:bg-white/10"
-            style={{ backgroundColor: ct.bg, borderColor: ct.border, backdropFilter: 'blur(12px)' }}
+            style={{ 
+              backgroundColor: book.type === BookType.EPUB ? activeEpubTheme.bg : ct.bg, 
+              color: 'var(--color-primary)',
+              borderColor: book.type === BookType.EPUB ? 'rgba(0,0,0,0.1)' : ct.border,
+              backdropFilter: 'blur(12px)' 
+            }}
             title="Zoom Out"
           >
             <span className="material-symbols-outlined text-2xl">zoom_out</span>
@@ -867,9 +1034,21 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
       {/* Mini progress indicator when controls are hidden */}
       {!showControls && !loading && !error && (
         <div className="fixed bottom-10 right-8 z-[110] animate-in fade-in slide-in-from-right-4 duration-500">
-          <div className="px-4 py-2 flex items-center gap-3 border shadow-2xl rounded-full" style={{ backgroundColor: ct.glass, borderColor: ct.border, backdropFilter: 'blur(12px)' }}>
-            <div className="size-1.5 rounded-full bg-primary animate-pulse" />
-            <span className="text-[10px] font-bold opacity-60 tracking-[0.2em]">{currentPage} / {totalPages}</span>
+          <div 
+            className="px-4 py-2 flex items-center gap-3 border shadow-2xl rounded-full" 
+            style={{ 
+              backgroundColor: book.type === BookType.EPUB ? activeEpubTheme.bg + 'd8' : ct.glass, 
+              color: book.type === BookType.EPUB ? activeEpubTheme.text : 'inherit',
+              borderColor: book.type === BookType.EPUB ? 'rgba(0,0,0,0.1)' : ct.border, 
+              backdropFilter: 'blur(12px)' 
+            }}
+          >
+            <span className="text-[10px] font-bold tracking-widest">{currentPage} / {totalPages}</span>
+            {totalPages > 0 && (
+              <span className="text-[9px] font-extrabold text-primary">
+                {Math.round((currentPage / totalPages) * 100)}%
+              </span>
+            )}
           </div>
         </div>
       )}

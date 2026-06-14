@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Book, BookType, Collection, UserSettings } from '../types';
 import * as db from '../db';
+import { getTranslation } from '../translations';
 
 interface LibraryProps {
   books: Book[];
@@ -12,6 +12,8 @@ interface LibraryProps {
   setActiveFilter: (f: string) => void;
   onDelete: (id: string) => void;
   onFavorite: (id: string) => void;
+  onToggleNsfw?: (id: string) => void;
+  onRenameBook?: (id: string, newTitle: string) => void;
   settings: UserSettings;
 }
 
@@ -25,8 +27,9 @@ const THEME_COLORS = {
 
 const Library: React.FC<LibraryProps> = ({
   books, onOpenBook, searchQuery, setSearchQuery,
-  activeFilter, setActiveFilter, onDelete, onFavorite, settings
+  activeFilter, setActiveFilter, onDelete, onFavorite, onToggleNsfw, onRenameBook, settings
 }) => {
+  const t = getTranslation(settings.language || 'en');
   const ct = THEME_COLORS[settings.theme] ?? THEME_COLORS.dark;
   const [sortBy, setSortBy] = useState<'title' | 'author' | 'date'>('date');
   const [showSort, setShowSort] = useState(false);
@@ -40,6 +43,12 @@ const Library: React.FC<LibraryProps> = ({
   const [newCollColor, setNewCollColor] = useState(COLL_COLORS[0]);
   const [bookMenu, setBookMenu] = useState<string | null>(null);
   const [addToCollMenu, setAddToCollMenu] = useState<string | null>(null);
+  const [revealedNsfw, setRevealedNsfw] = useState<{ [key: string]: boolean }>({});
+  
+  // Renaming book state
+  const [renamingBookId, setRenamingBookId] = useState<string | null>(null);
+  const [renameInput, setRenameInput] = useState('');
+
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -130,7 +139,6 @@ const Library: React.FC<LibraryProps> = ({
     <div className="px-6 space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Search */}
       <div className="relative z-30">
-        {/* Search icon */}
         <span
           className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-xl pointer-events-none select-none"
           style={{ color: ct.icon }}
@@ -140,7 +148,7 @@ const Library: React.FC<LibraryProps> = ({
 
         <input
           type="text"
-          placeholder="Search library..."
+          placeholder={t.searchPlaceholder}
           value={searchQuery}
           onFocus={() => setShowHistory(true)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(searchQuery)}
@@ -156,10 +164,8 @@ const Library: React.FC<LibraryProps> = ({
           }}
         />
 
-        {/* Placeholder shimmed via a pseudo-overlay technique — we use a native placeholder colored with CSS */}
         <style>{`input::placeholder { color: ${ct.placeholder}; }`}</style>
 
-        {/* Clear button */}
         {searchQuery && (
           <button
             onMouseDown={(e) => { e.preventDefault(); setSearchQuery(''); }}
@@ -170,7 +176,6 @@ const Library: React.FC<LibraryProps> = ({
           </button>
         )}
 
-        {/* Recent searches dropdown */}
         {showHistory && history.length > 0 && !searchQuery && (
           <div
             className="absolute top-full left-0 right-0 mt-2 rounded-2xl p-2 shadow-2xl animate-in fade-in slide-in-from-top-2 z-40"
@@ -181,7 +186,7 @@ const Library: React.FC<LibraryProps> = ({
             }}
           >
             <p className="text-[10px] font-bold px-3 py-2 uppercase tracking-widest" style={{ color: ct.icon }}>
-              Recent searches
+              {settings.language === 'es' ? 'Búsquedas recientes' : settings.language === 'pt' ? 'Buscas recentes' : 'Recent searches'}
             </p>
             {history.map((h) => (
               <button
@@ -201,7 +206,7 @@ const Library: React.FC<LibraryProps> = ({
               onClick={() => { setHistory([]); db.saveMetadata('search_history', []); setShowHistory(false); }}
               className="w-full text-center py-2 text-[10px] font-bold uppercase tracking-widest text-red-400 hover:text-red-300 transition-colors"
             >
-              Clear history
+              {settings.language === 'es' ? 'Limpiar historial' : settings.language === 'pt' ? 'Limpar histórico' : 'Clear history'}
             </button>
           </div>
         )}
@@ -230,7 +235,7 @@ const Library: React.FC<LibraryProps> = ({
             onClick={() => setShowNewColl(true)}
             className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-bold shrink-0 border border-ui-border opacity-40 hover:opacity-80 transition-opacity"
           >
-            <span className="material-symbols-outlined text-xs">add</span> New
+            <span className="material-symbols-outlined text-xs">add</span> {settings.language === 'es' ? 'Nueva' : settings.language === 'pt' ? 'Nova' : 'New'}
           </button>
         </div>
       )}
@@ -238,13 +243,13 @@ const Library: React.FC<LibraryProps> = ({
       {/* New collection form */}
       {showNewColl && (
         <div className="glass rounded-2xl p-4 space-y-3 border border-ui-border animate-in fade-in zoom-in-95">
-          <p className="text-xs font-bold opacity-60">New Collection</p>
+          <p className="text-xs font-bold opacity-60">{t.newCollection}</p>
           <input
             autoFocus
             value={newCollName}
             onChange={(e) => setNewCollName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && createCollection()}
-            placeholder="Collection name..."
+            placeholder={settings.language === 'es' ? 'Nombre de colección...' : settings.language === 'pt' ? 'Nome da coleção...' : 'Collection name...'}
             className="w-full bg-ui-bg-muted border border-ui-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
           />
           <div className="flex gap-2">
@@ -258,8 +263,10 @@ const Library: React.FC<LibraryProps> = ({
             ))}
           </div>
           <div className="flex gap-2">
-            <button onClick={createCollection} className="flex-1 py-2 bg-primary text-white text-xs font-bold rounded-xl">Create</button>
-            <button onClick={() => setShowNewColl(false)} className="flex-1 py-2 glass text-xs font-bold rounded-xl opacity-60">Cancel</button>
+            <button onClick={createCollection} className="flex-1 py-2 bg-primary text-white text-xs font-bold rounded-xl">{t.create}</button>
+            <button onClick={() => setShowNewColl(false)} className="flex-1 py-2 glass text-xs font-bold rounded-xl opacity-60">
+              {settings.language === 'es' ? 'Cancelar' : settings.language === 'pt' ? 'Cancelar' : 'Cancel'}
+            </button>
           </div>
         </div>
       )}
@@ -267,25 +274,33 @@ const Library: React.FC<LibraryProps> = ({
       {/* Filter + Sort + View toggle */}
       <div className="flex items-center gap-3">
         <div className="flex gap-2 overflow-x-auto hide-scrollbar flex-1">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => { setActiveFilter(cat); setActiveCollection(null); }}
-              className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border shrink-0 ${
-                activeFilter === cat && !activeCollection
-                  ? 'bg-primary border-primary text-white shadow-lg'
-                  : 'glass text-current opacity-60 hover:opacity-100'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+          {categories.map((cat) => {
+            let label = cat;
+            if (cat === 'All') label = t.filterAll;
+            else if (cat === 'Favorites') label = t.filterFavorites;
+            else if (cat === 'EPUBs') label = 'EPUB';
+            else if (cat === 'PDFs') label = 'PDF';
+
+            return (
+              <button
+                key={cat}
+                onClick={() => { setActiveFilter(cat); setActiveCollection(null); }}
+                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border shrink-0 ${
+                  activeFilter === cat && !activeCollection
+                    ? 'bg-primary border-primary text-white shadow-lg'
+                    : 'glass text-current opacity-60 hover:opacity-100'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
           {collections.length === 0 && (
             <button
               onClick={() => setShowNewColl(true)}
               className="px-3 py-1.5 rounded-xl text-[10px] font-bold border border-dashed border-ui-border opacity-40 hover:opacity-70 shrink-0 transition-opacity"
             >
-              + Collection
+              + {t.collections}
             </button>
           )}
         </div>
@@ -308,7 +323,10 @@ const Library: React.FC<LibraryProps> = ({
                       sortBy === opt ? 'bg-primary text-white' : 'hover:bg-ui-bg-muted opacity-60 hover:opacity-100'
                     }`}
                   >
-                    By {opt === 'date' ? 'Last Read' : opt}
+                    {settings.language === 'es' ? 'Por ' : settings.language === 'pt' ? 'Por ' : 'By '}
+                    {opt === 'date' 
+                      ? (settings.language === 'es' ? 'Último leído' : settings.language === 'pt' ? 'Último lido' : 'Last Read') 
+                      : (opt === 'title' ? (settings.language === 'es' ? 'Título' : settings.language === 'pt' ? 'Título' : 'Title') : opt === 'author' ? (settings.language === 'es' ? 'Autor' : settings.language === 'pt' ? 'Autor' : 'Author') : opt)}
                   </button>
                 ))}
               </div>
@@ -321,25 +339,42 @@ const Library: React.FC<LibraryProps> = ({
       <section className="pb-10">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold tracking-tight">
-            {activeCollection ? collections.find((c) => c.id === activeCollection)?.name : 'Library'}
+            {activeCollection ? collections.find((c) => c.id === activeCollection)?.name : t.library}
           </h2>
-          <span className="text-[10px] font-bold opacity-30 uppercase">{filteredBooks.length} Items</span>
+          <span className="text-[10px] font-bold opacity-30 uppercase">
+            {filteredBooks.length} {settings.language === 'es' ? 'Elementos' : settings.language === 'pt' ? 'Elementos' : 'Items'}
+          </span>
         </div>
 
         {filteredBooks.length > 0 ? (
           <div ref={menuRef} className={isGrid ? 'grid grid-cols-2 gap-4' : 'flex flex-col gap-3'}>
-            {filteredBooks.map((book) => (
-              isGrid ? (
+            {filteredBooks.map((book) => {
+              const isNsfw = book.tags?.includes('NSFW');
+              const shouldBlur = isNsfw && !settings.showNsfw && !revealedNsfw[book.id];
+
+              return isGrid ? (
                 /* Grid Card */
                 <div key={book.id} className="relative glass rounded-2xl p-3 border border-ui-border hover:border-primary/30 transition-all group active:scale-95">
-                  <div onClick={() => onOpenBook(book)} className="cursor-pointer">
+                  <div onClick={() => !shouldBlur && onOpenBook(book)} className="cursor-pointer">
                     <div className="aspect-[3/4] rounded-xl overflow-hidden mb-3 relative bg-ui-bg-accented">
                       {book.coverUrl
-                        ? <img src={book.coverUrl} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                        : <div className="w-full h-full flex items-center justify-center opacity-20"><span className="material-symbols-outlined text-5xl">auto_stories</span></div>
+                        ? <img src={book.coverUrl} alt="" style={shouldBlur ? { filter: 'blur(20px)' } : {}} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-500" />
+                        : <div style={shouldBlur ? { filter: 'blur(20px)' } : {}} className="w-full h-full flex items-center justify-center opacity-20"><span className="material-symbols-outlined text-5xl">auto_stories</span></div>
                       }
-                      <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/40 backdrop-blur-md text-[8px] font-bold uppercase tracking-tighter text-white">{book.type}</div>
-                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
+                      
+                      {shouldBlur && (
+                        <div 
+                          onClick={(e) => { e.stopPropagation(); setRevealedNsfw(prev => ({ ...prev, [book.id]: true })); }}
+                          className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center p-2 text-center cursor-pointer z-10 transition-colors hover:bg-black/80"
+                        >
+                          <span className="material-symbols-outlined text-red-400 text-2xl mb-1">visibility_off</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-red-400">NSFW</span>
+                          <span className="text-[8px] opacity-60 mt-0.5 text-white">{t.clickToReveal}</span>
+                        </div>
+                      )}
+
+                      <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/40 backdrop-blur-md text-[8px] font-bold uppercase tracking-tighter text-white z-20">{book.type}</div>
+                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20 z-20">
                         <div className="h-full bg-primary transition-all" style={{ width: `${book.progress}%` }} />
                       </div>
                     </div>
@@ -350,7 +385,7 @@ const Library: React.FC<LibraryProps> = ({
                     </div>
                   </div>
                   {/* Actions */}
-                  <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                     <button
                       onClick={(e) => { e.stopPropagation(); onFavorite(book.id); }}
                       className="size-6 flex items-center justify-center rounded-lg bg-black/40 backdrop-blur-md"
@@ -372,7 +407,7 @@ const Library: React.FC<LibraryProps> = ({
                         onClick={(e) => { e.stopPropagation(); setAddToCollMenu(book.id); }}
                         className="w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-ui-bg-muted flex items-center gap-2"
                       >
-                        <span className="material-symbols-outlined text-sm opacity-50">folder_open</span> Add to Collection
+                        <span className="material-symbols-outlined text-sm opacity-50">folder_open</span> {t.addToCollection}
                       </button>
                       {addToCollMenu === book.id && collections.length > 0 && (
                         <div className="pl-4 pb-1">
@@ -388,11 +423,39 @@ const Library: React.FC<LibraryProps> = ({
                           ))}
                         </div>
                       )}
+                      
+                      {onRenameBook && (
+                        <button
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setRenamingBookId(book.id); 
+                            setRenameInput(book.title);
+                            setBookMenu(null); 
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-ui-bg-muted flex items-center gap-2"
+                        >
+                          <span className="material-symbols-outlined text-sm opacity-50">edit</span>
+                          {settings.language === 'es' ? 'Renombrar' : settings.language === 'pt' ? 'Renomear' : 'Rename'}
+                        </button>
+                      )}
+
+                      {onToggleNsfw && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onToggleNsfw(book.id); setBookMenu(null); }}
+                          className="w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-ui-bg-muted flex items-center gap-2"
+                        >
+                          <span className="material-symbols-outlined text-sm opacity-50">
+                            {book.tags?.includes('NSFW') ? 'visibility' : 'visibility_off'}
+                          </span>
+                          {book.tags?.includes('NSFW') ? t.unmarkNsfw : t.markNsfw}
+                        </button>
+                      )}
+
                       <button
                         onClick={(e) => { e.stopPropagation(); onDelete(book.id); setBookMenu(null); }}
                         className="w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-red-500/10 text-red-400 flex items-center gap-2"
                       >
-                        <span className="material-symbols-outlined text-sm">delete</span> Delete
+                        <span className="material-symbols-outlined text-sm">delete</span> {t.deleteBook}
                       </button>
                     </div>
                   )}
@@ -400,17 +463,27 @@ const Library: React.FC<LibraryProps> = ({
               ) : (
                 /* List Row */
                 <div key={book.id} className="relative glass rounded-2xl px-4 py-3 border border-ui-border hover:border-primary/20 transition-all flex items-center gap-4 group active:scale-[0.99]">
-                  <div onClick={() => onOpenBook(book)} className="flex items-center gap-4 flex-1 cursor-pointer min-w-0">
-                    <div className="size-14 rounded-xl overflow-hidden bg-ui-bg-accented shrink-0">
+                  <div onClick={() => !shouldBlur && onOpenBook(book)} className="flex items-center gap-4 flex-1 cursor-pointer min-w-0">
+                    <div className="size-14 rounded-xl overflow-hidden bg-ui-bg-accented shrink-0 relative">
                       {book.coverUrl
-                        ? <img src={book.coverUrl} alt="" className="w-full h-full object-cover" />
-                        : <div className="w-full h-full flex items-center justify-center opacity-20"><span className="material-symbols-outlined">auto_stories</span></div>
+                        ? <img src={book.coverUrl} alt="" style={shouldBlur ? { filter: 'blur(10px)' } : {}} className="w-full h-full object-cover" />
+                        : <div style={shouldBlur ? { filter: 'blur(10px)' } : {}} className="w-full h-full flex items-center justify-center opacity-20"><span className="material-symbols-outlined">auto_stories</span></div>
                       }
+
+                      {shouldBlur && (
+                        <div 
+                          onClick={(e) => { e.stopPropagation(); setRevealedNsfw(prev => ({ ...prev, [book.id]: true })); }}
+                          className="absolute inset-0 bg-black/60 flex items-center justify-center cursor-pointer z-10"
+                        >
+                          <span className="material-symbols-outlined text-red-400 text-xs">visibility_off</span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm font-bold truncate group-hover:text-primary transition-colors">{book.title}</h3>
                         {book.isFavorite && <span className="material-symbols-outlined text-xs text-amber-400" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>}
+                        {isNsfw && <span className="text-[8px] font-bold px-1 py-0.2 rounded border border-red-500/30 text-red-400">NSFW</span>}
                       </div>
                       <p className="text-[10px] opacity-40 truncate">{book.author}</p>
                       <div className="flex items-center gap-2 mt-1.5">
@@ -425,21 +498,120 @@ const Library: React.FC<LibraryProps> = ({
                     <button onClick={() => onFavorite(book.id)} className="size-8 flex items-center justify-center rounded-xl hover:bg-ui-bg-accented" style={{ color: book.isFavorite ? 'var(--color-favorite)' : 'rgba(255,255,255,0.4)' }}>
                       <span className="material-symbols-outlined text-sm" style={book.isFavorite ? { fontVariationSettings: "'FILL' 1" } : {}}>star</span>
                     </button>
-                    <button onClick={() => onDelete(book.id)} className="size-8 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-red-400/60 hover:text-red-400">
-                      <span className="material-symbols-outlined text-sm">delete</span>
-                    </button>
+                    
+                    <div className="relative">
+                      <button onClick={() => setBookMenu(bookMenu === book.id ? null : book.id)} className="size-8 flex items-center justify-center rounded-xl hover:bg-ui-bg-accented text-white/50 hover:text-white">
+                        <span className="material-symbols-outlined text-sm">more_vert</span>
+                      </button>
+                      {bookMenu === book.id && (
+                        <div className="absolute right-0 bottom-full mb-1 z-50 w-44 glass rounded-2xl p-2 border border-ui-border shadow-2xl animate-in fade-in zoom-in-95">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setAddToCollMenu(book.id); }}
+                            className="w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-ui-bg-muted flex items-center gap-2"
+                          >
+                            <span className="material-symbols-outlined text-sm opacity-50">folder_open</span> {t.addToCollection}
+                          </button>
+                          {addToCollMenu === book.id && collections.length > 0 && (
+                            <div className="pl-4 pb-1">
+                              {collections.map((c) => (
+                                <button
+                                  key={c.id}
+                                  onClick={(e) => { e.stopPropagation(); addBookToCollection(book.id, c.id); }}
+                                  className="w-full text-left px-2 py-1.5 text-xs rounded-lg hover:bg-ui-bg-muted flex items-center gap-2"
+                                >
+                                  <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
+                                  {c.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {onRenameBook && (
+                            <button
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setRenamingBookId(book.id); 
+                                setRenameInput(book.title);
+                                setBookMenu(null); 
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-ui-bg-muted flex items-center gap-2"
+                            >
+                              <span className="material-symbols-outlined text-sm opacity-50">edit</span>
+                              {settings.language === 'es' ? 'Renombrar' : settings.language === 'pt' ? 'Renomear' : 'Rename'}
+                            </button>
+                          )}
+
+                          {onToggleNsfw && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onToggleNsfw(book.id); setBookMenu(null); }}
+                              className="w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-ui-bg-muted flex items-center gap-2"
+                            >
+                              <span className="material-symbols-outlined text-sm opacity-50">
+                                {book.tags?.includes('NSFW') ? 'visibility' : 'visibility_off'}
+                              </span>
+                              {book.tags?.includes('NSFW') ? t.unmarkNsfw : t.markNsfw}
+                            </button>
+                          )}
+
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onDelete(book.id); setBookMenu(null); }}
+                            className="w-full text-left px-3 py-2 text-xs rounded-xl hover:bg-red-500/10 text-red-400 flex items-center gap-2"
+                          >
+                            <span className="material-symbols-outlined text-sm">delete</span> {t.deleteBook}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              )
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="py-20 flex flex-col items-center text-center opacity-30">
             <span className="material-symbols-outlined text-6xl mb-4 font-light">library_books</span>
-            <p className="text-sm font-medium">No documents found.</p>
+            <p className="text-sm font-medium">{t.noBooks}</p>
           </div>
         )}
       </section>
+
+      {/* Rename Book Modal */}
+      {renamingBookId && (
+        <div className="fixed inset-0 z-[600] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="w-full max-w-sm glass-premium rounded-3xl p-6 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-500 text-white">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-primary" />
+            <h3 className="text-base font-bold mb-4">
+              {settings.language === 'es' ? 'Renombrar Libro' : settings.language === 'pt' ? 'Renomear Livro' : 'Rename Book'}
+            </h3>
+            <input
+              type="text"
+              value={renameInput}
+              onChange={(e) => setRenameInput(e.target.value)}
+              className="w-full bg-ui-bg-muted border border-ui-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40 text-white mb-4"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRenamingBookId(null)}
+                className="flex-1 py-2 rounded-xl bg-ui-bg-accented border border-ui-border text-xs font-bold transition-all"
+              >
+                {settings.language === 'es' ? 'Cancelar' : settings.language === 'pt' ? 'Cancelar' : 'Cancel'}
+              </button>
+              <button
+                onClick={() => {
+                  if (onRenameBook && renameInput.trim()) {
+                    onRenameBook(renamingBookId, renameInput);
+                  }
+                  setRenamingBookId(null);
+                }}
+                className="flex-1 py-2 rounded-xl bg-primary text-white text-xs font-bold transition-all shadow-lg"
+              >
+                {settings.language === 'es' ? 'Guardar' : settings.language === 'pt' ? 'Salvar' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {(showHistory || showSort) && (
         <div className="fixed inset-0 z-20" onClick={() => { setShowHistory(false); setShowSort(false); }} />
