@@ -519,6 +519,19 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
           </div>
         )}
 
+        {/* EPUB Viewer — always in DOM so epubViewerRef is available during setup */}
+        {book.type === BookType.EPUB && (
+          <div
+            ref={epubViewerRef}
+            className="absolute inset-0 transition-colors duration-300"
+            style={{
+              backgroundColor: activeEpubTheme.bg,
+              opacity: loading ? 0 : 1,
+              pointerEvents: loading ? 'none' : 'auto',
+            }}
+          />
+        )}
+
         {!loading && !error && (
           <>
             {/* PDF — scroll mode */}
@@ -566,15 +579,6 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
                   <canvas ref={canvasRef} className="w-full shadow-[0_20px_60px_rgba(0,0,0,0.8)] rounded-lg bg-white" />
                 </div>
               </div>
-            )}
-
-            {/* EPUB Viewer container */}
-            {book.type === BookType.EPUB && (
-              <div 
-                ref={epubViewerRef} 
-                className="w-full h-full transition-colors duration-300" 
-                style={{ backgroundColor: activeEpubTheme.bg }}
-              />
             )}
 
             {/* CBR/CBZ — scroll mode */}
