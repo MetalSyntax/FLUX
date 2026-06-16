@@ -4,6 +4,44 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>FLUX</title>
+    <meta name="description" content="A privacy-first, offline-capable reading app for manga, comics, and e-books. Read EPUB, PDF, CBR, and CBZ books directly in your browser with zero tracking." />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="FLUX — Personal Reading App (EPUB, PDF, CBR, CBZ)" />
+    <meta property="og:description" content="A privacy-first, offline-capable reading app for manga, comics, and e-books. All data lives locally in your browser." />
+    <meta property="og:image" content="/pwa-192x192.png" />
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="FLUX — Personal Reading App" />
+    <meta name="twitter:description" content="A privacy-first, offline-capable reading app for manga, comics, and e-books." />
+    <meta name="twitter:image" content="/pwa-192x192.png" />
+
+    <!-- JSON-LD Structured Data for AEO/GEO (Schema.org) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "FLUX",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Any",
+        "offers": {
+          "@type": "Offer",
+          "price": "0.00",
+          "priceCurrency": "USD"
+        },
+        "description": "Privacy-first, offline-capable reading app for manga, comics, and e-books. Read EPUB, PDF, CBR, and CBZ books directly in your browser with zero tracking.",
+        "browserRequirements": "Requires HTML5, IndexedDB capability, Service Workers support.",
+        "softwareVersion": "1.1.0",
+        "author": {
+          "@type": "Person",
+          "name": "MetalSyntax",
+          "url": "https://metalsyntax.vercel.app"
+        }
+      }
+    </script>
+
     <meta name="theme-color" content="#000000" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -27,7 +65,29 @@
 
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Semantic SEO / AEO / GEO fallback content for search engines and crawlers -->
+      <header style="display:none;">
+        <h1>FLUX — Personal Reading App</h1>
+        <p>Your privacy-first, offline-capable reader for manga, comics, and e-books. Native support for EPUB, PDF, CBR, and CBZ formats directly in your browser.</p>
+        <nav>
+          <a href="#features">Features</a> | 
+          <a href="#discover">Discover Free Books</a> | 
+          <a href="#privacy">Privacy Policy</a>
+        </nav>
+      </header>
+      <main style="display:none;">
+        <section id="features">
+          <h2>Key Features</h2>
+          <ul>
+            <li><strong>Privacy First:</strong> All your files are stored locally in IndexedDB. No accounts, no cloud servers, no tracking.</li>
+            <li><strong>Formats:</strong> Read EPUB novels, PDF documents, and CBR/CBZ comic files with advanced zoom and panning.</li>
+            <li><strong>Discover:</strong> Browse and download free classics from Project Gutenberg directly into your browser.</li>
+            <li><strong>Statistics:</strong> Track your reading streaks, daily goals, and completed books.</li>
+          </ul>
+        </section>
+      </main>
+    </div>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

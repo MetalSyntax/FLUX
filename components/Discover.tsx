@@ -150,7 +150,7 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook, set
   const lastRead = [...library].sort((a, b) => b.lastReadDate - a.lastReadDate)[0];
 
   const Skeleton = () => (
-    <div className="flex-none w-[85vw] aspect-[4/5] rounded-3xl bg-ui-bg-muted animate-pulse snap-center" />
+    <div className="flex-none w-[85vw] md:w-[280px] aspect-[4/5] md:aspect-[3/4] rounded-3xl bg-ui-bg-muted animate-pulse snap-center" />
   );
 
   // Translate genre labels dynamically
@@ -235,7 +235,7 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook, set
           ) : (
             <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 pb-4">
               {searchResults.map((book) => (
-                <div key={book.id} className="relative flex-none w-[85vw] aspect-[4/5] rounded-3xl overflow-hidden snap-center group shadow-2xl">
+                <div key={book.id} className="relative flex-none w-[85vw] md:w-[280px] aspect-[4/5] md:aspect-[3/4] rounded-3xl overflow-hidden snap-center group shadow-2xl">
                   <img
                     src={getCover(book)}
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -319,7 +319,7 @@ const Discover: React.FC<DiscoverProps> = ({ library, onOpenBook, onAddBook, set
             {loading
               ? [1, 2, 3].map((i) => <Skeleton key={i} />)
               : featured.map((book) => (
-                <div key={book.id} className="relative flex-none w-[85vw] aspect-[4/5] rounded-3xl overflow-hidden snap-center group shadow-2xl">
+                <div key={book.id} className="relative flex-none w-[85vw] md:w-[280px] aspect-[4/5] md:aspect-[3/4] rounded-3xl overflow-hidden snap-center group shadow-2xl">
                   <img
                     src={getCover(book)}
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"

@@ -2,6 +2,8 @@ export type Language = 'en' | 'es' | 'pt';
 
 export const translations = {
   en: {
+    metaTitle: 'FLUX — Personal Reading App (EPUB, PDF, CBR, CBZ)',
+    metaDescription: 'A privacy-first, offline-capable reading app for manga, comics, and e-books. Read EPUB, PDF, CBR, and CBZ books directly in your browser with zero tracking.',
     // BottomNav
     library: 'Library',
     explore: 'Explore',
@@ -70,6 +72,7 @@ export const translations = {
     updateLatest: 'You are on the latest version!',
     terms: 'Terms of Service',
     privacy: 'Privacy Policy',
+    faq: 'FAQ & Glossary',
     logout: 'Logout',
     
     // ReaderView
@@ -91,6 +94,8 @@ export const translations = {
     updateErrorMsg: 'Could not check for updates. Try again later.',
   },
   es: {
+    metaTitle: 'FLUX — Tu lector personal de libros, manga y cómics (EPUB, PDF, CBR, CBZ)',
+    metaDescription: 'Lector de libros, mangas y cómics offline y privado. Lee formatos EPUB, PDF, CBR y CBZ directamente en tu navegador sin registro ni rastreo.',
     // BottomNav
     library: 'Biblioteca',
     explore: 'Explorar',
@@ -159,6 +164,7 @@ export const translations = {
     updateLatest: '¡Ya tienes la última versión!',
     terms: 'Términos de Servicio',
     privacy: 'Política de Privacidad',
+    faq: 'Preguntas Frecuentes',
     logout: 'Cerrar Sesión',
     
     // ReaderView
@@ -180,6 +186,8 @@ export const translations = {
     updateErrorMsg: 'No se pudo buscar actualizaciones. Inténtalo más tarde.',
   },
   pt: {
+    metaTitle: 'FLUX — Seu leitor pessoal de livros, mangás e quadrinhos (EPUB, PDF, CBR, CBZ)',
+    metaDescription: 'Leitor de livros, mangás e quadrinhos offline e privado. Leia formatos EPUB, PDF, CBR e CBZ diretamente no seu navegador sem registro ou rastreamento.',
     // BottomNav
     library: 'Biblioteca',
     explore: 'Explorar',
@@ -248,6 +256,7 @@ export const translations = {
     updateLatest: 'Você está na versão mais recente!',
     terms: 'Termos de Serviço',
     privacy: 'Política de Privacidade',
+    faq: 'Perguntas Frequentes',
     logout: 'Sair',
     
     // ReaderView

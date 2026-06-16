@@ -10,6 +10,7 @@ import BottomNav from './components/BottomNav';
 import TopNav from './components/TopNav';
 import Terms from './components/Terms';
 import Privacy from './components/Privacy';
+import FAQ from './components/FAQ';
 import * as db from './db';
 import { applyTheme as setAppTheme } from './themes/themeHelper';
 import { getTranslation } from './translations';
@@ -18,6 +19,16 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>(ViewType.HOME);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [library, setLibrary] = useState<Book[]>([]);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [isUploading, setIsUploading] = useState(false);
@@ -50,6 +61,21 @@ const App: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentView]);
+
+  useEffect(() => {
+    const lang = settings.language || 'en';
+    const tTrans = getTranslation(lang) as any;
+    document.documentElement.lang = lang;
+    document.title = tTrans.metaTitle || 'FLUX';
+    
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute('content', tTrans.metaDescription || '');
+  }, [settings.language]);
 
   useEffect(() => {
     const init = async () => {
@@ -235,12 +261,12 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen relative flex flex-col overflow-x-hidden transition-colors duration-300">
-      {currentView !== ViewType.READER && currentView !== ViewType.TERMS && currentView !== ViewType.PRIVACY && (
+      {currentView !== ViewType.READER && currentView !== ViewType.TERMS && currentView !== ViewType.PRIVACY && currentView !== ViewType.FAQ && (
         <TopNav settings={settings} onProfileClick={() => setCurrentView(ViewType.PROFILE)} />
       )}
 
-      {/* Basic header with back button for legal pages */}
-      {(currentView === ViewType.TERMS || currentView === ViewType.PRIVACY) && (
+      {/* Basic header with back button for legal/help pages */}
+      {(currentView === ViewType.TERMS || currentView === ViewType.PRIVACY || currentView === ViewType.FAQ) && (
         <div className="pt-12 pb-4 px-6 flex items-center gap-4">
           <button onClick={() => setCurrentView(ViewType.PROFILE)} className="size-10 rounded-full glass flex items-center justify-center hover:bg-ui-bg-accented transition-colors">
             <span className="material-symbols-outlined">arrow_back</span>
@@ -286,11 +312,14 @@ const App: React.FC = () => {
             isCheckingUpdate={isCheckingUpdate}
             onNavigate={(view: string) => setCurrentView(view as ViewType)}
             onDeleteBook={handleDelete}
+            deferredPrompt={deferredPrompt}
+            onClearInstallPrompt={() => setDeferredPrompt(null)}
           />
         )}
 
         {currentView === ViewType.TERMS && <Terms settings={settings} />}
         {currentView === ViewType.PRIVACY && <Privacy settings={settings} />}
+        {currentView === ViewType.FAQ && <FAQ settings={settings} />}
 
         {currentView === ViewType.STATS && (
           <Stats library={library} settings={settings} />
@@ -306,7 +335,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {currentView !== ViewType.READER && currentView !== ViewType.TERMS && currentView !== ViewType.PRIVACY && (
+      {currentView !== ViewType.READER && currentView !== ViewType.TERMS && currentView !== ViewType.PRIVACY && currentView !== ViewType.FAQ && (
         <BottomNav
           activeView={currentView}
           onNavigate={setCurrentView}

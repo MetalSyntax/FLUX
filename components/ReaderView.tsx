@@ -443,6 +443,23 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
     }
   };
 
+  const handlePageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (zoom > 1.05) {
+      setShowControls((p) => !p);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const w = rect.width;
+    if (x < w * 0.25) {
+      goToPrev();
+    } else if (x > w * 0.75) {
+      goToNext();
+    } else {
+      setShowControls((p) => !p);
+    }
+  };
+
   // Bookmarks Logic
   const isBookmarkedOnCurrentPage = bookmarks.some((b) => b.page === currentPage);
 
@@ -564,7 +581,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
 
             {/* PDF — paginated mode */}
             {book.type === BookType.PDF && !scrollMode && (
-              <div className="page-flip flex items-center justify-center w-full h-full overflow-auto p-4" onClick={() => setShowControls((p) => !p)}>
+              <div className="page-flip flex items-center justify-center w-full h-full overflow-auto p-4" onClick={handlePageClick}>
                 <div
                   className={`flex items-center justify-center transition-all duration-200 ${
                     isPageTurning
@@ -603,7 +620,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
 
             {/* CBR/CBZ — single page */}
             {book.type === BookType.CBR && !doublePage && !scrollMode && comicImages[currentPage - 1] && (
-              <div className="relative h-full w-full flex items-center justify-center p-4 lg:p-10 page-flip overflow-auto" onClick={() => setShowControls((p) => !p)}>
+              <div className="relative h-full w-full flex items-center justify-center p-4 lg:p-10 page-flip overflow-auto" onClick={handlePageClick}>
                 <img
                   key={currentPage}
                   src={comicImages[currentPage - 1]}
@@ -627,7 +644,7 @@ const ReaderView: React.FC<ReaderViewProps> = ({ book, settings, onClose, onProg
 
             {/* CBR/CBZ — double page */}
             {book.type === BookType.CBR && doublePage && !scrollMode && (
-              <div className="relative h-full w-full flex items-center justify-center gap-1 p-2 lg:p-6 overflow-auto" onClick={() => setShowControls((p) => !p)}>
+              <div className="relative h-full w-full flex items-center justify-center gap-1 p-2 lg:p-6 overflow-auto" onClick={handlePageClick}>
                 {comicImages[currentPage - 1] && (
                   <img 
                     src={comicImages[currentPage - 1]} 

@@ -12,7 +12,8 @@ export enum ViewType {
   READER = 'reader',
   STATS = 'stats',
   TERMS = 'terms',
-  PRIVACY = 'privacy'
+  PRIVACY = 'privacy',
+  FAQ = 'faq'
 }
 
 export interface UserSettings {

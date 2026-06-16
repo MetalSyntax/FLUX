@@ -11,6 +11,8 @@ interface ProfileProps {
   isCheckingUpdate?: boolean;
   onNavigate?: (view: string) => void;
   onDeleteBook?: (id: string) => void;
+  deferredPrompt?: any;
+  onClearInstallPrompt?: () => void;
 }
 
 function calculateStreak(sessions: ReadingSession[]): number {
@@ -32,12 +34,31 @@ function calculateStreak(sessions: ReadingSession[]): number {
   return streak;
 }
 
-const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckUpdate, isCheckingUpdate, onNavigate, onDeleteBook }) => {
+const Profile: React.FC<ProfileProps> = ({ 
+  settings, 
+  onUpdate, 
+  library, 
+  onCheckUpdate, 
+  isCheckingUpdate, 
+  onNavigate, 
+  onDeleteBook,
+  deferredPrompt,
+  onClearInstallPrompt
+}) => {
   const t = getTranslation(settings.language || 'en');
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(settings.name);
   const [storageUsed, setStorageUsed] = useState('0 MB');
   const [sessions, setSessions] = useState<ReadingSession[]>([]);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      if (onClearInstallPrompt) onClearInstallPrompt();
+    }
+  };
   const [editGoal, setEditGoal] = useState(false);
   const [goalInput, setGoalInput] = useState(String(settings.dailyGoal ?? 10));
   
@@ -344,22 +365,46 @@ const Profile: React.FC<ProfileProps> = ({ settings, onUpdate, library, onCheckU
           </span>
         </button>
 
-        <div className="grid grid-cols-2 gap-3 mt-4">
+        <div className="grid grid-cols-3 gap-2 mt-4">
           <button
             onClick={() => onNavigate && onNavigate('terms')}
-            className="glass p-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-ui-bg-accented transition-all"
+            className="glass p-3 rounded-2xl flex items-center justify-center gap-1.5 hover:bg-ui-bg-accented transition-all text-center"
           >
             <span className="material-symbols-outlined text-[14px] opacity-40">gavel</span>
-            <span className="text-[10px] font-bold opacity-80">{t.terms}</span>
+            <span className="text-[9px] font-bold opacity-80 truncate">{t.terms}</span>
           </button>
           <button
             onClick={() => onNavigate && onNavigate('privacy')}
-            className="glass p-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-ui-bg-accented transition-all"
+            className="glass p-3 rounded-2xl flex items-center justify-center gap-1.5 hover:bg-ui-bg-accented transition-all text-center"
           >
             <span className="material-symbols-outlined text-[14px] opacity-40">shield</span>
-            <span className="text-[10px] font-bold opacity-80">{t.privacy}</span>
+            <span className="text-[9px] font-bold opacity-80 truncate">{t.privacy}</span>
+          </button>
+          <button
+            onClick={() => onNavigate && onNavigate('faq')}
+            className="glass p-3 rounded-2xl flex items-center justify-center gap-1.5 hover:bg-ui-bg-accented transition-all text-center"
+          >
+            <span className="material-symbols-outlined text-[14px] opacity-40">help</span>
+            <span className="text-[9px] font-bold opacity-80 truncate">{t.faq}</span>
           </button>
         </div>
+
+        {deferredPrompt && (
+          <button
+            onClick={handleInstallClick}
+            className="w-full bg-primary hover:bg-primary/95 text-white p-4 rounded-2xl flex items-center justify-between shadow-lg hover:shadow-primary/20 transition-all mt-4 mb-2 animate-pulse"
+          >
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-white">download</span>
+              <p className="text-xs font-bold">
+                {settings.language === 'es' ? 'Instalar aplicación FLUX' : settings.language === 'pt' ? 'Instalar aplicativo FLUX' : 'Install FLUX App'}
+              </p>
+            </div>
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-white/80">
+              {settings.language === 'es' ? 'Instalar' : settings.language === 'pt' ? 'Instalar' : 'Install'}
+            </span>
+          </button>
+        )}
 
         {onCheckUpdate && (
           <button
