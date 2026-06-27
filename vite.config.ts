@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon.svg'],
+      includeAssets: ['favicon.ico', 'favicon.png', 'apple-touch-icon-180x180.png'],
       manifest: {
         name: 'FLUX Reader',
         short_name: 'FLUX',
@@ -18,14 +18,34 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: 'icon.svg',
-            sizes: '192x192',
-            type: 'image/svg+xml'
+            src: 'pwa-64x64.png',
+            sizes: '64x64',
+            type: 'image/png',
+            purpose: 'any'
           },
           {
-            src: 'icon.svg',
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: 'pwa-512x512.png',
             sizes: '512x512',
-            type: 'image/svg+xml'
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: 'maskable-icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
+          },
+          {
+            src: 'apple-touch-icon-180x180.png',
+            sizes: '180x180',
+            type: 'image/png',
+            purpose: 'any'
           }
         ]
       },
